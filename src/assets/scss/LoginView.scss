@@ -1,3 +1,5 @@
+@import './variables';
+
 .login-container {
   display: flex;
   justify-content: center;
@@ -18,29 +20,31 @@
 }
 
 .info-text {
-  color: gray;
+  color: $border-color;
   text-align: center;
   width: 65%;
   margin: 0;
 }
 
 h2 {
-  color: #414141;
+  color: $text-color;
   text-align: center;
+  font-family: $font-family-heading;
+  font-weight: $font-weight-heading;
 }
 
 input {
   margin: 15px 0;
   padding: 10px;
   background-color: white;
-  border: 1px solid gray;
+  border: 1px solid $border-color;
   border-radius: 4px;
   width: 45%;
 }
 
 button {
   padding: 10px 20px;
-  background: linear-gradient(to bottom, #50AAFF, #2495FF);
+  background: linear-gradient(to bottom, $gradient-start, $gradient-end);
   color: white;
   border: none;
   border-radius: 6px;
@@ -50,9 +54,9 @@ button {
 }
 
 button:hover {
-  background: linear-gradient(to bottom, #2495FF, #50AAFF);
+  background: linear-gradient(to bottom, $gradient-end, $gradient-start);
 }
 
 * {
-  font-family: 'Roboto Flex', sans-serif;
+  font-family: $font-family;
 }
