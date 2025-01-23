@@ -8,19 +8,19 @@
 .content {
   flex: 1;
   padding: 20px;
-  padding-top: 14px;
+  padding-top: 15px;
 }
 
 .header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 26px;
 }
 
 .header h1 {
   color: black;
-  font-size: 20px;
+  font-size: $font-size-header;
   font-weight: 500;
   margin: 0;
 }
@@ -28,12 +28,13 @@
 .add-meeting-button {
   position: relative;
   margin-left: 12px;
-  padding: 10px 18px;
+  padding: 8px 14px;
   background: linear-gradient(to bottom, $gradient-start, $gradient-end);
   color: white;
   border: none;
   border-radius: 6px;
   cursor: pointer;
+  font-size: $font-size-small;
 }
 
 .add-meeting-button:hover {
@@ -41,10 +42,8 @@
 }
 
 .add-icon {
-  position: absolute;
-  right: 10px;
-  width: 20px;
-  height: 20px;
+  margin-left: 80px;
+  margin-bottom: -4px;
 }
 
 .account-info {
@@ -64,7 +63,7 @@
 
 .account-email {
   color: $text-color;
-  font-size: 1rem;
+  font-size: $font-size-small;
 }
 
 .meeting-header {
@@ -72,15 +71,55 @@
   justify-content: space-between;
   background-color: $gray-color;
   padding: 10px;
+  padding-left: 15px;
+  padding-right: 0;
   border-radius: 4px;
-  margin-bottom: 20px;
+  margin-bottom: 10px;
 }
 
 .meeting-header span {
   flex: 1;
-  text-align: center;
+  text-align: left;
   color: $text-color;
-  font-weight: $font-weight-heading;
+  font-weight: 500;
+  font-size: $font-size-small;
+}
+
+.meeting-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.meeting-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 0;
+  padding-left: 15px;
+}
+
+.meeting-item span {
+  flex: 1;
+  text-align: left;
+  color: #9D9D9D;
+  font-size: $font-size-small;
+}
+
+.status {
+  margin-top: -5px;
+  padding: 5px 10px;
+  border-radius: 4px;
+  display: inline-block;
+  width: auto;
+}
+
+.status.new {
+  background-color: rgba(53, 255, 114, 0.22);
+  color: rgba(53, 255, 114, 1);
+}
+
+.status.old {
+  background-color: rgba(255, 53, 56, 0.22);
+  color: rgba(255, 53, 56, 1);
 }
 
 * {

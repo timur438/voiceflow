@@ -17,9 +17,30 @@
         <span>Дата</span>
         <span>Название</span>
         <span>Статус</span>
+        <span>Длина</span>
         <span>Источник</span>
       </div>
-      <!-- Add more content here -->
+      <div class="meeting-list">
+        <div class="meeting-item">
+          <span>01.01.2023</span>
+          <span>Встреча с клиентом</span>
+          <span>
+            <div class="status new">Новая</div>
+          </span>
+          <span>30 мин</span>
+          <span>Загружено</span>
+        </div>
+        <div class="meeting-item">
+          <span>02.01.2023</span>
+          <span>Обсуждение проекта</span>
+          <span>
+            <div class="status old">Старая</div>
+          </span>
+          <span>1 час</span>
+          <span>Загружено</span>
+        </div>
+        <!-- Add more meeting items here -->
+      </div>
     </div>
   </div>
 </template>

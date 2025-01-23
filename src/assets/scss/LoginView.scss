@@ -24,6 +24,7 @@
   text-align: center;
   width: 65%;
   margin: 0;
+  font-size: $font-size-small;
 }
 
 h2 {
@@ -31,6 +32,7 @@ h2 {
   text-align: center;
   font-family: $font-family-heading;
   font-weight: $font-weight-heading;
+  font-size: $font-size-header;
 }
 
 input {
@@ -40,6 +42,7 @@ input {
   border: 1px solid $border-color;
   border-radius: 4px;
   width: 45%;
+  font-size: $font-size-small;
 }
 
 button {
@@ -51,6 +54,7 @@ button {
   cursor: pointer;
   width: 40%;
   margin-top: 5px;
+  font-size: $font-size-small;
 }
 
 button:hover {

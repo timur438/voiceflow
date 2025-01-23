@@ -33,7 +33,7 @@
 }
 
 .logo h1 {
-  font-size: 20px;
+  font-size: $font-size-header;
   color: black;
   margin: 0;
   font-family: $font-family-heading;
@@ -41,7 +41,7 @@
 }
 
 .logo-button {
-  font-size: 20px;
+  font-size: $font-size-header;
   color: black;
   margin: 0;
   font-family: $font-family-heading;
@@ -81,7 +81,7 @@
   align-items: center;
   color: $text-color;
   text-decoration: none;
-  font-size: 16px;
+  font-size: $font-size-small;
   width: calc(100% + 16px);
   padding: 5px;
   padding-right: 8px;
