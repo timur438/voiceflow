@@ -26,7 +26,7 @@
   width: 26px;
   height: 26px;
   background: linear-gradient(to bottom, $gradient-start, $gradient-end);
-  border: 2px solid rgb(159, 185, 205);
+  border: 2px solid $border-color;
   border-radius: 6px;
   box-sizing: border-box;
   margin-right: 5px;

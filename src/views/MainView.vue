@@ -2,7 +2,23 @@
   <div class="main-container">
     <MainSidebar />
     <div class="content">
-      <h1>Добро пожаловать на главную страницу</h1>
+      <div class="header">
+        <h1>Мои встречи</h1>
+        <button class="add-meeting-button">
+          Добавить встречу
+          <img src="@/assets/img/add.svg" alt="Добавить" class="add-icon" />
+        </button>
+        <div class="account-info">
+          <div class="account-circle"></div>
+          <span class="account-email">example@example.com</span>
+        </div>
+      </div>
+      <div class="meeting-header">
+        <span>Дата</span>
+        <span>Название</span>
+        <span>Статус</span>
+        <span>Источник</span>
+      </div>
       <!-- Add more content here -->
     </div>
   </div>
