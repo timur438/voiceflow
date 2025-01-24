@@ -21,34 +21,50 @@
         <span>Источник</span>
       </div>
       <div class="meeting-list">
-        <div class="meeting-item">
-          <span>01.01.2023</span>
-          <span>Встреча с клиентом</span>
+        <button v-for="meeting in meetings" :key="meeting.id" class="meeting-item">
+          <span>{{ meeting.date }}</span>
+          <span>{{ meeting.name }}</span>
           <span>
-            <div class="status new">Новая</div>
+            <div :class="['status', meeting.status === 'new' ? 'new' : 'old']">{{ meeting.status === 'new' ? 'Новая' : 'Старая' }}</div>
           </span>
-          <span>30 мин</span>
-          <span>Загружено</span>
-        </div>
-        <div class="meeting-item">
-          <span>02.01.2023</span>
-          <span>Обсуждение проекта</span>
           <span>
-            <div class="status old">Старая</div>
+            <div class="length">{{ meeting.length }}</div>
           </span>
-          <span>1 час</span>
-          <span>Загружено</span>
+          <span>
+            <div class="source">
+              <img src="@/assets/img/frame.svg" alt="Frame" class="source-icon" />
+              Загружено
+            </div>
+          </span>
+          <img src="@/assets/img/trash.svg" alt="Удалить" class="delete-icon" @click="confirmDelete(meeting)" />
+        </button>
+      </div>
+    </div>
+    <div v-if="showPopup" class="popup">
+      <div class="popup-content">
+        <p class="popup-title">Вы точно хотите удалить встречу?</p>
+        <p class="popup-subtext">Встреча "{{ meetingToDelete?.name }}" будет удалена навсегда.<br>Без возможности восстановления.</p>
+        <div class="popup-buttons">
+          <button class="confirm-button" @click="deleteMeeting">Да</button>
+          <button class="cancel-button" @click="cancelDelete">Отменить</button>
         </div>
-        <!-- Add more meeting items here -->
       </div>
     </div>
   </div>
 </template>
 
 <script lang="ts">
-import { defineComponent } from 'vue';
+import { defineComponent, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import MainSidebar from '@/components/MainSidebar.vue';
+
+interface Meeting {
+  id: number;
+  date: string;
+  name: string;
+  status: 'new' | 'old';
+  length: string;
+}
 
 export default defineComponent({
   name: 'MainView',
@@ -60,7 +76,35 @@ export default defineComponent({
     const goToHome = () => {
       router.push({ name: 'MainView' });
     };
-    return { goToHome };
+
+    const meetings = ref<Meeting[]>(Array.from({ length: 30 }, (_, i) => ({
+      id: i + 1,
+      date: `0${i + 1}.01.2023`,
+      name: `Встреча ${i + 1}`,
+      status: i % 2 === 0 ? 'new' : 'old',
+      length: `${30 + i} мин`
+    })));
+
+    const showPopup = ref(false);
+    const meetingToDelete = ref<Meeting | null>(null);
+
+    const confirmDelete = (meeting: Meeting) => {
+      meetingToDelete.value = meeting;
+      showPopup.value = true;
+    };
+
+    const deleteMeeting = () => {
+      if (meetingToDelete.value) {
+        meetings.value = meetings.value.filter(meeting => meeting.id !== meetingToDelete.value!.id);
+        showPopup.value = false;
+      }
+    };
+
+    const cancelDelete = () => {
+      showPopup.value = false;
+    };
+
+    return { goToHome, meetings, showPopup, meetingToDelete, confirmDelete, deleteMeeting, cancelDelete };
   }
 });
 </script>
