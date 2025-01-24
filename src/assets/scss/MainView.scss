@@ -258,6 +258,110 @@
   background: darken($gray-color, 10%);
 }
 
+.upload-popup {
+  padding: 0;
+  max-width: 500px;
+}
+
+.popup-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 25px;
+  border-bottom: 1px solid $gray-color;
+}
+
+.popup-header span {
+  color: $text-color;
+  font-size: $font-size-medium;
+  font-weight: 500;
+}
+
+.close-button {
+  color: $text-color;
+  background: none;
+  border: none;
+  font-size: $font-size-large;
+  cursor: pointer;
+}
+
+.upload-body {
+  padding: 25px;
+}
+
+.drop-area {
+  border: 2px dashed $gray-color;
+  border-radius: 6px;
+  padding: 40px;
+  text-align: center;
+  margin-bottom: 20px;
+  background-color: #f9f9f9;
+  cursor: pointer;
+}
+
+.drop-area p {
+  margin: 0;
+  color: $text-color;
+}
+
+.drop-area span {
+  color: $gradient-start;
+  text-decoration: underline;
+  font-size: $font-size-medium;
+}
+
+.drop-describe {
+  font-size: $font-size-small;
+  color: gray;
+  margin-top: 10px;
+}
+
+.drop-area:hover {
+  border-color: $gradient-start;
+  background-color: rgba(53, 170, 255, 0.1);
+}
+
+.meeting-name {
+  margin-bottom: 20px;
+  text-align: left;
+}
+
+.meeting-name label {
+  display: block;
+  margin-bottom: 5px;
+  color: $text-color;
+  font-size: $font-size-small;
+}
+
+.meeting-name input {
+  width: 95%;
+  padding: 10px;
+  border: 1px solid $border-color;
+  border-radius: 6px;
+}
+
+.popup-footer {
+  background: $gray-color;
+  padding: 15px 25px;
+  border-top: 1px solid darken($gray-color, 10%);
+  text-align: right;
+  border-bottom-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+}
+
+.upload-button {
+  padding: 10px 20px;
+  background: linear-gradient(to bottom, $gradient-start, $gradient-end);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.upload-button:hover {
+  background: linear-gradient(to bottom, $gradient-end, $gradient-start);
+}
+
 * {
   font-family: $font-family;
 }

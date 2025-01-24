@@ -4,7 +4,7 @@
     <div class="content">
       <div class="header">
         <h1>Мои встречи</h1>
-        <button class="add-meeting-button">
+        <button class="add-meeting-button" @click="showUploadPopup = true">
           Добавить встречу
           <img src="@/assets/img/add.svg" alt="Добавить" class="add-icon" />
         </button>
@@ -50,6 +50,28 @@
         </div>
       </div>
     </div>
+    <div v-if="showUploadPopup" class="popup">
+      <div class="popup-content upload-popup">
+        <div class="popup-header">
+          <span>Загрузка аудио или видео файла</span>
+          <button class="close-button" @click="showUploadPopup = false">×</button>
+        </div>
+        <div class="upload-body">
+          <div class="drop-area" @click="openFileDialog">
+            <p><span>Выберите файл</span> или перетащите его сюда</p>
+            <p class="drop-describe">Любое аудио или видео меньше 1 ГБ</p>
+            <input type="file" ref="fileInput" style="display: none;" @change="handleFileChange" />
+          </div>
+          <div class="meeting-name">
+            <label for="meeting-name">Название встречи (опционально)</label>
+            <input type="text" id="meeting-name" v-model="meetingName" placeholder="Название" />
+          </div>
+        </div>
+        <div class="popup-footer">
+          <button class="upload-button">Загрузить встречу</button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -86,7 +108,10 @@ export default defineComponent({
     })));
 
     const showPopup = ref(false);
+    const showUploadPopup = ref(false);
     const meetingToDelete = ref<Meeting | null>(null);
+    const meetingName = ref('');
+    const fileInput = ref<HTMLInputElement | null>(null);
 
     const confirmDelete = (meeting: Meeting) => {
       meetingToDelete.value = meeting;
@@ -104,7 +129,20 @@ export default defineComponent({
       showPopup.value = false;
     };
 
-    return { goToHome, meetings, showPopup, meetingToDelete, confirmDelete, deleteMeeting, cancelDelete };
+    const openFileDialog = () => {
+      fileInput.value?.click();
+    };
+
+    const handleFileChange = (event: Event) => {
+      const input = event.target as HTMLInputElement;
+      if (input.files && input.files[0]) {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const file = input.files[0];
+        // Handle file upload logic here
+      }
+    };
+
+    return { goToHome, meetings, showPopup, showUploadPopup, meetingToDelete, meetingName, fileInput, confirmDelete, deleteMeeting, cancelDelete, openFileDialog, handleFileChange };
   }
 });
 </script>
