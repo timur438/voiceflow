@@ -41,3 +41,6 @@ temp/
 
 # Other
 *.swp
+package-lock.json
+package-lock.json
+src/assets/.DS_Store

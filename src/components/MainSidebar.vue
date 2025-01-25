@@ -7,9 +7,19 @@
       </div>
       <nav class="menu">
         <ul>
-          <li><a href="#"><img src="@/assets/img/category.svg" alt="Мои встречи" />Мои встречи</a></li>
-          <li><a href="#"><img src="@/assets/img/setting.svg" alt="Настройки и интеграции" />Настройки и интеграции</a></li>
-          <li><a href="#"><img src="@/assets/img/logout.svg" alt="Выйти" />Выйти</a></li>
+          <li>
+            <router-link to="/" @click="goToHome">
+              <img src="@/assets/img/category.svg" alt="My Meetings" />
+              {{ $t('myMeetings') }}
+            </router-link>
+          </li>
+          <li>
+            <router-link to="/settings">
+              <img src="@/assets/img/setting.svg" alt="Settings and Integrations" />
+              {{ $t('settingsAndIntegrations') }}
+            </router-link>
+          </li>
+          <li><a href="#"><img src="@/assets/img/logout.svg" alt="Logout" />{{ $t('logout') }}</a></li>
         </ul>
       </nav>
     </div>

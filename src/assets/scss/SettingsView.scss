@@ -1,0 +1,176 @@
+@import './variables';
+
+.settings-container {
+  padding: 20px;
+}
+
+.main-container {
+  display: flex;
+  height: 100vh;
+}
+
+.content {
+  flex: 1;
+  padding: 20px;
+  padding-top: 0;
+  overflow-y: auto;
+  color: white;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  background-color: white;
+  z-index: 10;
+  padding-top: 19.5px;
+  padding-bottom: 20px;
+}
+
+.header h1 {
+  color: black;
+  font-size: $font-size-header;
+  font-weight: 500;
+  margin: 0;
+}
+
+.account-info {
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+}
+
+.account-circle {
+  width: 26px;
+  height: 26px;
+  background: linear-gradient(to bottom, $gradient-start, $gradient-end);
+  border: 2px solid $border-color;
+  border-radius: 50%;
+  margin-right: 10px;
+}
+
+.account-email {
+  color: $text-color;
+  font-size: $font-size-small;
+}
+
+h1 {
+  font-size: $font-size-header;
+  color: $text-color;
+  font-family: $font-family-heading;
+  font-weight: $font-weight-heading;
+}
+
+h2 {
+  font-size: $font-size-medium;
+  color: black;
+  font-family: $font-family;
+  font-weight: 500;
+}
+
+.auto-record-options {
+  margin-top: 10px;
+}
+
+.auto-record-options label {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+  font-size: $font-size-small;
+  color: black;
+  font-weight: 400;
+}
+
+.auto-record-options input[type="radio"] {
+  margin-right: 10px;
+  appearance: none;
+  border: 3px solid $border-color;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+}
+
+.auto-record-options input[type="radio"]:checked {
+  border-color: $gradient-start;
+}
+
+.language {
+  margin-top: 20px;
+  margin-bottom: 5px;
+}
+
+.language-select {
+  margin-top: 10px;
+}
+
+.language-select select {
+  padding: 10px;
+  border: 1px solid $border-color;
+  border-radius: 6px;
+  font-size: $font-size-small;
+  color: $text-color;
+  background-color: white;
+}
+
+.api-key-container {
+  display: flex;
+  align-items: center;
+  margin-top: 20px;
+  max-width: 30%;
+  height: 40px;
+}
+
+
+.api-key-input {
+  max-width: 60%;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  flex: 1;
+  border: transparent;
+  border-radius: 6px;
+  background-color: $gray-color;
+}
+
+.api-key-input input {
+  flex: 1;
+  padding: 6px;
+  border: none;
+  background-color: $gray-color;
+  font-size: $font-size-small;
+  color: $text-color;
+  cursor: pointer;
+  outline: none;
+}
+
+.copy-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 10px;
+}
+
+.copy-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.documentation-button {
+  padding: 11px 20px;
+  background-color: white;
+  border: 1px solid rgba(128, 128, 128, 0.7);
+  border-radius: 6px;
+  color: gray;
+  cursor: pointer;
+  margin-left: 10px;
+}
+
+.documentation-button:hover {
+  background-color: $gray-color;
+}
+
+* {
+  font-family: $font-family;
+}

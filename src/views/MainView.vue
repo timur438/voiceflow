@@ -1,12 +1,12 @@
 <template>
   <div class="main-container">
-    <MainSidebar />
+    <MainSidebar @navigateToMain="goToHome" />
     <div class="content">
-      <div class="header">
-        <h1>Мои встречи</h1>
-        <button class="add-meeting-button" @click="showUploadPopup = true">
-          Добавить встречу
-          <img src="@/assets/img/add.svg" alt="Добавить" class="add-icon" />
+      <div class="header" @click="goToHome">
+        <h1>{{ $t('myMeetings') }}</h1>
+        <button class="add-meeting-button" @click.stop="showUploadPopup = true">
+          {{ $t('addMeeting') }}
+          <img src="@/assets/img/add.svg" alt="Add" class="add-icon" />
         </button>
         <div class="account-info">
           <div class="account-circle"></div>
@@ -14,18 +14,18 @@
         </div>
       </div>
       <div class="meeting-header">
-        <span>Дата</span>
-        <span>Название</span>
-        <span>Статус</span>
-        <span>Длина</span>
-        <span>Источник</span>
+        <span>{{ $t('date') }}</span>
+        <span>{{ $t('name') }}</span>
+        <span>{{ $t('status') }}</span>
+        <span>{{ $t('length') }}</span>
+        <span>{{ $t('source') }}</span>
       </div>
       <div class="meeting-list">
         <button v-for="meeting in meetings" :key="meeting.id" class="meeting-item">
           <span>{{ meeting.date }}</span>
           <span>{{ meeting.name }}</span>
           <span>
-            <div :class="['status', meeting.status === 'new' ? 'new' : 'old']">{{ meeting.status === 'new' ? 'Новая' : 'Старая' }}</div>
+            <div :class="['status', meeting.status === 'new' ? 'new' : 'old']">{{ meeting.status === 'new' ? $t('new') : $t('old') }}</div>
           </span>
           <span>
             <div class="length">{{ meeting.length }}</div>
@@ -33,42 +33,42 @@
           <span>
             <div class="source">
               <img src="@/assets/img/frame.svg" alt="Frame" class="source-icon" />
-              Загружено
+              {{ $t('uploaded') }}
             </div>
           </span>
-          <img src="@/assets/img/trash.svg" alt="Удалить" class="delete-icon" @click="confirmDelete(meeting)" />
+          <img src="@/assets/img/trash.svg" alt="Delete" class="delete-icon" @click="confirmDelete(meeting)" />
         </button>
       </div>
     </div>
     <div v-if="showPopup" class="popup">
       <div class="popup-content">
-        <p class="popup-title">Вы точно хотите удалить встречу?</p>
-        <p class="popup-subtext">Встреча "{{ meetingToDelete?.name }}" будет удалена навсегда.<br>Без возможности восстановления.</p>
+        <p class="popup-title">{{ $t('confirmDelete') }}</p>
+        <p class="popup-subtext">{{ $t('deleteForever', { meetingName: meetingToDelete?.name }) }}</p>
         <div class="popup-buttons">
-          <button class="confirm-button" @click="deleteMeeting">Да</button>
-          <button class="cancel-button" @click="cancelDelete">Отменить</button>
+          <button class="confirm-button" @click="deleteMeeting">{{ $t('yes') }}</button>
+          <button class="cancel-button" @click="cancelDelete">{{ $t('cancel') }}</button>
         </div>
       </div>
     </div>
     <div v-if="showUploadPopup" class="popup">
       <div class="popup-content upload-popup">
         <div class="popup-header">
-          <span>Загрузка аудио или видео файла</span>
+          <span>{{ $t('uploadFile') }}</span>
           <button class="close-button" @click="showUploadPopup = false">×</button>
         </div>
         <div class="upload-body">
           <div class="drop-area" @click="openFileDialog">
-            <p><span>Выберите файл</span> или перетащите его сюда</p>
-            <p class="drop-describe">Любое аудио или видео меньше 1 ГБ</p>
+            <p><span>{{ $t('chooseFile') }}</span> {{ $t('orDrag') }}</p>
+            <p class="drop-describe">{{ $t('anyFile') }}</p>
             <input type="file" ref="fileInput" style="display: none;" @change="handleFileChange" />
           </div>
           <div class="meeting-name">
-            <label for="meeting-name">Название встречи (опционально)</label>
-            <input type="text" id="meeting-name" v-model="meetingName" placeholder="Название" />
+            <label for="meeting-name">{{ $t('meetingName') }}</label>
+            <input type="text" id="meeting-name" v-model="meetingName" :placeholder="$t('meetingNamePlaceholder')" />
           </div>
         </div>
         <div class="popup-footer">
-          <button class="upload-button">Загрузить встречу</button>
+          <button class="upload-button">{{ $t('uploadMeeting') }}</button>
         </div>
       </div>
     </div>
