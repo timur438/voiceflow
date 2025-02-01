@@ -1,0 +1,17 @@
+version: '3'
+
+services:
+  whisper_app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "4173:4173"
+    networks:
+      - whisper_net
+    expose:
+      - "4173"
+
+networks:
+  whisper_net:
+    driver: bridge
