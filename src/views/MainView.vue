@@ -8,7 +8,7 @@
           {{ $t('addMeeting') }}
           <img src="@/assets/img/add.svg" alt="Add" class="add-icon" />
         </button>
-        <div class="account-info">
+        <div class="account-info" @click="goToSettings" style="cursor: pointer;">
           <div class="account-circle"></div>
           <span class="account-email">example@example.com</span>
         </div>
@@ -21,7 +21,7 @@
         <span>{{ $t('source') }}</span>
       </div>
       <div class="meeting-list">
-        <button v-for="meeting in meetings" :key="meeting.id" class="meeting-item">
+        <button v-for="meeting in meetings" :key="meeting.id" class="meeting-item" @click="goToMeeting(meeting.id)">
           <span>{{ meeting.date }}</span>
           <span>{{ meeting.name }}</span>
           <span>
@@ -36,7 +36,7 @@
               {{ $t('uploaded') }}
             </div>
           </span>
-          <img src="@/assets/img/trash.svg" alt="Delete" class="delete-icon" @click="confirmDelete(meeting)" />
+          <img src="@/assets/img/trash.svg" alt="Delete" class="delete-icon" @click.stop="confirmDelete(meeting)" />
         </button>
       </div>
     </div>
@@ -99,6 +99,15 @@ export default defineComponent({
       router.push({ name: 'MainView' });
     };
 
+    const goToSettings = (event: Event) => {
+      event.stopPropagation();
+      router.push({ name: 'SettingsView' });
+    };
+
+    const goToMeeting = (id: number) => {
+      router.push({ name: 'MeetingView', params: { id } });
+    };
+
     const meetings = ref<Meeting[]>(Array.from({ length: 30 }, (_, i) => ({
       id: i + 1,
       date: `0${i + 1}.01.2023`,
@@ -142,7 +151,7 @@ export default defineComponent({
       }
     };
 
-    return { goToHome, meetings, showPopup, showUploadPopup, meetingToDelete, meetingName, fileInput, confirmDelete, deleteMeeting, cancelDelete, openFileDialog, handleFileChange };
+    return { goToHome, goToSettings, goToMeeting, meetings, showPopup, showUploadPopup, meetingToDelete, meetingName, fileInput, confirmDelete, deleteMeeting, cancelDelete, openFileDialog, handleFileChange };
   }
 });
 </script>

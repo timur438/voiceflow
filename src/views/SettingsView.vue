@@ -4,7 +4,7 @@
     <div class="content">
       <div class="header">
         <h1>{{ t('mySettings') }}</h1>
-        <div class="account-info">
+        <div class="account-info" @click="goToSettings" style="cursor: pointer;">
           <div class="account-circle"></div>
           <span class="account-email">example@example.com</span>
         </div>
@@ -61,6 +61,11 @@ export default defineComponent({
       router.push({ name: 'MainView' });
     };
 
+    const goToSettings = (event: Event) => {
+      event.stopPropagation();
+      router.push({ name: 'SettingsView' });
+    };
+
     const autoRecordOption = ref('all');
     const selectedLanguage = ref('ru');
     const apiKey = ref('1234-5678-ABCD-EFGH');
@@ -74,7 +79,7 @@ export default defineComponent({
       alert(t('copied'));
     };
 
-    return { t, goToHome, autoRecordOption, selectedLanguage, apiKey, changeLanguage, copyApiKey };
+    return { t, goToHome, goToSettings, autoRecordOption, selectedLanguage, apiKey, changeLanguage, copyApiKey };
   }
 });
 </script>

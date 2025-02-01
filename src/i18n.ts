@@ -40,7 +40,14 @@ const messages = {
     status: 'Status',
     length: 'Length',
     source: 'Source',
-    meetingNamePlaceholder: 'Meeting name'
+    meetingNamePlaceholder: 'Meeting name',
+    back: 'Back',
+    share: 'Share',
+    export: 'Export',
+    keywords: 'Keywords',
+    participants: 'Participants',
+    transcript: 'Transcript',
+    summary: 'Summary'
   },
   ru: {
     welcome: 'Добро пожаловать',
@@ -81,7 +88,14 @@ const messages = {
     status: 'Статус',
     length: 'Длина',
     source: 'Источник',
-    meetingNamePlaceholder: 'Название встречи'
+    meetingNamePlaceholder: 'Название встречи',
+    back: 'Назад',
+    share: 'Поделиться',
+    export: 'Экспорт',
+    keywords: 'Ключевые слова',
+    participants: 'Участники',
+    transcript: 'Транскрипт',
+    summary: 'Саммари'
   }
 };
 

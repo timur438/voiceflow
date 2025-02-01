@@ -1,0 +1,227 @@
+@import './variables';
+
+.main-container {
+  display: flex;
+  height: 100vh;
+}
+
+.content {
+  flex: 1;
+  padding: 20px;
+  padding-top: 0;
+  overflow-y: auto;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  background-color: white;
+  z-index: 10;
+  padding-top: 19.5px;
+  padding-bottom: 20px;
+}
+
+.back {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  color: rgba(157, 157, 157, 1);
+}
+
+.back-icon {
+  width: 20px;
+  height: 20px;
+  margin-right: 6px;
+}
+
+.account-info {
+  display: flex;
+  align-items: center;
+}
+
+.share, .export {
+  margin-right: 20px;
+  cursor: pointer;
+  color: $text-color;
+  font-size: $font-size-small;
+}
+
+.account-circle {
+  width: 26px;
+  height: 26px;
+  background: linear-gradient(to bottom, $gradient-start, $gradient-end);
+  border: 2px solid $border-color;
+  border-radius: 50%;
+  margin-right: 10px;
+}
+
+.account-email {
+  color: $text-color;
+  font-size: $font-size-small;
+}
+
+.meeting-content {
+  margin-top: 20px;
+  text-align: left;
+  margin: 0 300px; 
+}
+
+.meeting-title {
+  font-size: $font-size-header;
+  color: black;
+  font-family: $font-family-heading;
+  font-weight: $font-weight-heading;
+}
+
+.meeting-details {
+  display: flex;
+  justify-content: flex-start;
+  margin-top: 10px;
+}
+
+.detail-item {
+  background-color: $gray-color;
+  border-radius: 6px;
+  padding: 6px;
+  margin: 0 10px;
+  margin-left: 0;
+  font-size: $font-size-small;
+  color: $text-color;
+  display: flex;
+  align-items: center;
+}
+
+.detail-icon {
+  width: 16px;
+  height: 16px;
+  margin-right: 6px;
+}
+
+.keywords-section,
+.participants-section {
+  margin-top: 20px;
+}
+
+.keywords p {
+  font-size: $font-size-small;
+  color: gray;
+}
+
+.participants {
+  font-size: $font-size-small;
+}
+
+.lamp-icon {
+  width: 16px;
+  height: 16px;
+  vertical-align: middle;
+}
+
+.meeting-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  margin-top: 20px;
+}
+
+.tabs {
+  display: flex;
+}
+
+.tab {
+  margin-right: 20px;
+  cursor: pointer;
+  color: gray; 
+  font-size: $font-size-small;
+  position: relative;
+}
+
+.tab.active {
+  color: black; 
+}
+
+.tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: -13px; 
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: black;
+}
+
+.copy-icon {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+}
+
+.separator {
+  height: 1px;
+  background-color: $gray-color;
+}
+
+.summary-content {
+  margin-top: 20px;
+}
+
+.summary-block {
+  margin-bottom: 20px;
+  background-color: $gray-color;
+  border-radius: 6px;
+  padding: 15px;
+}
+
+.summary-block h3 {
+  font-size: $font-size-medium * 1.1;
+  color: black;
+  font-family: $font-family-heading;
+  font-weight: 400;
+  margin-bottom: 10px;
+}
+
+.summary-block p {
+  font-size: $font-size-small;
+  color: black !important;
+  font-family: $font-family;
+  font-weight: 400;
+  margin: 5px 0;
+  line-height: 1.6; 
+}
+
+.summary-block ul {
+  padding-left: 20px;
+}
+
+.summary-block li {
+  font-size: $font-size-small;
+  color: black !important;
+  font-family: $font-family;
+  font-weight: 400;
+  margin: 5px 0;
+  line-height: 1.6; 
+}
+
+.meeting-content h2 {
+  font-size: $font-size-small;
+  color: $text-color;
+  font-family: $font-family;
+  font-weight: 400;
+  margin-bottom: 5px;
+}
+
+.meeting-content p {
+  font-size: $font-size-small;
+  color: gray;
+  font-family: $font-family;
+  font-weight: 400;
+  margin: 5px 0;
+}
+
+* {
+  font-family: $font-family;
+}
