@@ -44,3 +44,5 @@ temp/
 package-lock.json
 package-lock.json
 src/assets/.DS_Store
+
+venv
