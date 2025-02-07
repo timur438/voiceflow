@@ -30,7 +30,7 @@ class Predictor(BasePredictor):
         self.model = WhisperModel(
             model_name,
             device="cuda" if torch.cuda.is_available() else "cpu",
-            compute_type="float16",
+            compute_type="float32",
         )
         self.diarization_model = Pipeline.from_pretrained(
             "pyannote/speaker-diarization-3.1",
