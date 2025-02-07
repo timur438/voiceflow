@@ -13,7 +13,7 @@ from cog import BasePredictor, BaseModel, Input, File, Path
 from faster_whisper import WhisperModel
 from pyannote.audio import Pipeline
 import torchaudio
-from .summarizer import TranscriptSummarizer
+from summarizer import TranscriptSummarizer
 from typing import Optional
 
 class Output(BaseModel):
