@@ -1,49 +1,39 @@
 from llama_cpp import Llama
+import os
+import requests
+from tqdm import tqdm
 
 class TranscriptSummarizer:
-    def __init__(self, model_path="models/mistral-7b-instruct-v0.2.Q4_K_M.gguf"):
-        """Initialize the summarizer with a local GGUF model"""
+    def __init__(self, model_name="mistral-7b-instruct-v0.2.Q4_K_M.gguf"):
+        """Initialize the summarizer with auto-downloading model capability"""
+        self.models_dir = "models"
+        self.model_path = os.path.join(self.models_dir, model_name)
+        self.model_url = f"https://huggingface.co/TheBloke/Mistral-7B-Instruct-v0.2-GGUF/resolve/main/{model_name}"
+        
+        os.makedirs(self.models_dir, exist_ok=True)
+        
+        if not os.path.exists(self.model_path):
+            self._download_model()
+            
         self.llm = Llama(
-            model_path=model_path,
-            n_ctx=8192,  # Контекстное окно
-            n_gpu_layers=-1  # Использовать GPU где возможно
+            model_path=self.model_path,
+            n_ctx=8192,
+            n_gpu_layers=-1
         )
 
-    def _create_prompt(self, transcript, prompt_type="summary"):
-        """Create a prompt for the summarization or HR interview"""
-        if prompt_type == "summary":
-            prompt_template = """Below is a transcript of a meeting. Please provide:
-1. A brief summary (2-3 paragraphs)
-2. Key topics discussed (bullet points)
-3. Main decisions and action items
-4. Important follow-ups
-
-Transcript:
-{transcript}
-
-Response:"""
-        elif prompt_type == "hr_interview":
-            prompt_template = """Below is a transcript of an HR interview. Please provide:
-1. Key insights about the candidate's skills and experience
-2. Behavioral traits observed during the interview
-3. Recommendations for the next steps in the hiring process
-
-Transcript:
-{transcript}
-
-Response:"""
+    def _download_model(self):
+        """Download the model from HuggingFace"""
+        print(f"Downloading model to {self.model_path}...")
+        response = requests.get(self.model_url, stream=True)
+        total_size = int(response.headers.get('content-length', 0))
         
-        return prompt_template.format(transcript=transcript)
-
-    def generate_summary(self, transcript, prompt_type="summary", temperature=0.7, max_tokens=1024):
-        """Generate a summary or HR interview analysis from the transcript"""
-        prompt = self._create_prompt(transcript, prompt_type)
-        
-        response = self.llm(
-            prompt,
-            max_tokens=max_tokens,
-            temperature=temperature,
-            stop=["</s>", "Transcript:"],
-        )
-        
-        return response['choices'][0]['text'].strip()
+        with open(self.model_path, 'wb') as file, tqdm(
+            desc=self.model_path,
+            total=total_size,
+            unit='iB',
+            unit_scale=True,
+            unit_divisor=1024,
+        ) as progress_bar:
+            for data in response.iter_content(chunk_size=1024):
+                size = file.write(data)
+                progress_bar.update(size)
