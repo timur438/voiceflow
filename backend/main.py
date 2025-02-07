@@ -1,7 +1,8 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException, Response
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
-from cog import Predictor, Output
+from predict import Predictor, Output
+from summarizer import TranscriptSummarizer
 import base64
 import asyncio
 
