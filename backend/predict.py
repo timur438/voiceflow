@@ -32,9 +32,13 @@ class Predictor(BasePredictor):
             device="cuda" if torch.cuda.is_available() else "cpu",
             compute_type="float32",
         )
+        hf_auth_token = os.getenv("HF_AUTH_TOKEN")
+        if not hf_auth_token:
+            raise RuntimeError("Hugging Face auth token is missing")
+            
         self.diarization_model = Pipeline.from_pretrained(
             "pyannote/speaker-diarization-3.1",
-            use_auth_token="YOUR HF TOKEN",
+            use_auth_token=hf_auth_token,
         ).to(torch.device("cuda"))
         self.summarizer = TranscriptSummarizer()
 
