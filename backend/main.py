@@ -1,10 +1,11 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException, Response, Body
+from fastapi import FastAPI, UploadFile, File, HTTPException, Response, Form
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from predict import Predictor, Output
 from summarizer import TranscriptSummarizer
 import base64
 import asyncio
+import json
 
 app = FastAPI()
 
@@ -46,18 +47,15 @@ async def generate_status_messages(file_content: bytes, request: TranscriptionRe
 
 @app.post("/transcribe")
 async def transcribe(
-    file: UploadFile = File(..., max_size=1000 * 1024 * 1024),  # 1000 МБ
-    request: TranscriptionRequest = Body(...),  # Принимаем объект через Body
+    file: UploadFile = File(...), 
+    request: str = Form(...),  
 ):
     try:
-        if file.size > 1000 * 1024 * 1024:
-            raise HTTPException(status_code=413, detail="File size exceeds 1000 MB limit")
+        request_data = json.loads(request)
+        transcription_request = TranscriptionRequest(**request_data)
 
         file_content = await file.read()
 
-        return StreamingResponse(
-            generate_status_messages(file_content, request),
-            media_type="text/event-stream",
-        )
+        return {"file_size": len(file_content), "request_data": transcription_request.dict()}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

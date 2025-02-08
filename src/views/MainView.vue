@@ -165,22 +165,12 @@ export default defineComponent({
         offset_seconds: 0
       };
 
-      // Remove this line
-      // formData.append('request', JSON.stringify(requestData));
-
-      // Send the request data as a JSON body in the fetch request
-      const jsonData = {
-        file: formData,
-        request: requestData,
-      };
+      formData.append('request', JSON.stringify(requestData));
 
       try {
         const response = await fetch('https://voiceflow.ru/api/transcribe', {
           method: 'POST',
-          body: JSON.stringify(jsonData),
-          headers: {
-            'Content-Type': 'application/json'
-          }
+          body: formData,
         });
 
         if (!response.ok) {
