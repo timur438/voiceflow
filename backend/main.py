@@ -40,6 +40,8 @@ async def transcribe(
         return {"status": "success", "transcript": result['segments'], "summary": result.get('summary', "No summary available")}
     
     except Exception as e:
+        if os.path.exists(temp_file_path):
+            os.remove(temp_file_path)
         raise HTTPException(status_code=500, detail=str(e))
 
 

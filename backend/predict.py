@@ -254,6 +254,8 @@ class Predictor(BasePredictor):
             for s in segments
         ]
 
+        torch.cuda.empty_cache()
+
         time_transcribing_end = time.time()
         print(
             f"Finished with transcribing, took {time_transcribing_end - time_start:.5} seconds, {len(segments)} segments"
@@ -270,6 +272,8 @@ class Predictor(BasePredictor):
         print(
             f"Finished with diarization, took {time_diraization_end - time_transcribing_end:.5} seconds"
         )
+
+        torch.cuda.empty_cache()
 
         print("Starting merging")
 
