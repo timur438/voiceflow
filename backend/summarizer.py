@@ -18,7 +18,7 @@ class TranscriptSummarizer:
         self.llm = Llama(
             model_path=self.model_path,
             n_ctx=8192,
-            n_gpu_layers=-1
+            n_gpu_layers=0
         )
 
     def _download_model(self):
