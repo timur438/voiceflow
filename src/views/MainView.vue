@@ -163,7 +163,6 @@ export default defineComponent({
         if (!response.ok) {
           throw new Error('Ошибка при отправке файла на сервер');
         }
-
         const result = await response.json();
         console.log('Результат транскрипции:', result);
         // Здесь можно добавить логику для обработки результата транскрипции
