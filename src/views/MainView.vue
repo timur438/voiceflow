@@ -159,7 +159,7 @@ export default defineComponent({
         transcript_output_format: 'both',
         num_speakers: 2,
         translate: false,
-        language: 'en',
+        language: 'ru',
         prompt: '',
         summary_type: 'summary',
         offset_seconds: 0
