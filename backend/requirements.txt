@@ -7,3 +7,4 @@ faster-whisper
 torchvision
 torchtext
 llama-cpp-python
+cog
