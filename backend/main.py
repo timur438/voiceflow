@@ -22,13 +22,29 @@ class TranscriptionRequest(BaseModel):
     summary_type: str = "summary"
     offset_seconds: int = 0
 
+@app.post("/transcribe")
+async def transcribe(
+    file: UploadFile = File(...), 
+    request: str = Form(...),  
+):
+    try:
+        request_data = json.loads(request)
+        transcription_request = TranscriptionRequest(**request_data)
+
+        file_content = await file.read()
+
+        result = await generate_status_messages(file_content, transcription_request)
+        
+        return {"status": "success", "transcript": result['segments'], "summary": result.get('summary', "No summary available")}
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 async def generate_status_messages(file_content: bytes, request: TranscriptionRequest):
     try:
-        yield "data: Starting transcription...\n\n"
-        await asyncio.sleep(1)
-
         file_string = base64.b64encode(file_content).decode("utf-8")
-
+        
         result = predictor.predict(
             file_string=file_string,
             group_segments=request.group_segments,
@@ -41,21 +57,10 @@ async def generate_status_messages(file_content: bytes, request: TranscriptionRe
             offset_seconds=request.offset_seconds,
         )
 
-        yield f"data: Transcription complete. Result: {result}\n\n"
-    except Exception as e:
-        yield f"data: Error occurred: {str(e)}\n\n"
+        return {
+            "segments": result.segments,
+            "summary": result.summary
+        }
 
-@app.post("/transcribe")
-async def transcribe(
-    file: UploadFile = File(...), 
-    request: str = Form(...),  
-):
-    try:
-        request_data = json.loads(request)
-        transcription_request = TranscriptionRequest(**request_data)
-
-        file_content = await file.read()
-
-        return {"file_size": len(file_content), "request_data": transcription_request.dict()}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
