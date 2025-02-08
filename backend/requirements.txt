@@ -8,3 +8,4 @@ torchvision
 torchtext
 llama-cpp-python
 cog
+python-dotenv

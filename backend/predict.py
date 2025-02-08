@@ -15,6 +15,9 @@ from pyannote.audio import Pipeline
 import torchaudio
 from summarizer import TranscriptSummarizer
 from typing import Optional
+from dotenv import load_dotenv
+
+load_dotenv()
 
 class Output(BaseModel):
     segments: list
