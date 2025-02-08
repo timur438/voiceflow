@@ -153,14 +153,19 @@ export default defineComponent({
     const uploadFile = async (file: File) => {
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('group_segments', 'true');
-      formData.append('transcript_output_format', 'both');
-      formData.append('num_speakers', '2');
-      formData.append('translate', 'false');
-      formData.append('language', 'en');
-      formData.append('prompt', '');
-      formData.append('summary_type', 'summary');
-      formData.append('offset_seconds', '0');
+
+      const requestData = {
+        group_segments: true,
+        transcript_output_format: 'both',
+        num_speakers: 2,
+        translate: false,
+        language: 'en',
+        prompt: '',
+        summary_type: 'summary',
+        offset_seconds: 0
+      };
+
+      formData.append('request', JSON.stringify(requestData));
 
       try {
         const response = await fetch('https://voiceflow.ru/api/transcribe', {
@@ -169,7 +174,7 @@ export default defineComponent({
         });
 
         if (!response.ok) {
-          const errorResponse = await response.text();
+          const errorResponse = await response.json();
           console.error('Ошибка при отправке файла на сервер:', errorResponse);
           throw new Error('Ошибка при отправке файла на сервер');
         }
