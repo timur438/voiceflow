@@ -33,7 +33,7 @@ class Predictor(BasePredictor):
         self.model = WhisperModel(
             model_name,
             device="cpu",
-            compute_type="float16",
+            compute_type="float32",
         )
         hf_auth_token = os.getenv("HF_TOKEN")
         if not hf_auth_token:
