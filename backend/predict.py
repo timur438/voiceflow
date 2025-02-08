@@ -101,11 +101,12 @@ class Predictor(BasePredictor):
             temp_wav_filename = f"temp-{time.time_ns()}.wav"
 
             if file is not None:
+                file_path = str(file)
                 subprocess.run(
                     [
                         "ffmpeg",
                         "-i",
-                        file,
+                        file_path,
                         "-ar",
                         "16000",
                         "-ac",
