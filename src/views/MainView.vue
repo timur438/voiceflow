@@ -157,7 +157,7 @@ export default defineComponent({
       const requestData = {
         group_segments: true,
         transcript_output_format: 'both',
-        num_speakers: 2,
+        num_speakers: null,
         translate: false,
         language: 'ru',
         prompt: '',
