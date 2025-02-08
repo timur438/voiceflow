@@ -32,7 +32,7 @@ class Predictor(BasePredictor):
             device="cuda" if torch.cuda.is_available() else "cpu",
             compute_type="float32",
         )
-        hf_auth_token = os.getenv("HF_AUTH_TOKEN")
+        hf_auth_token = os.getenv("HF_TOKEN")
         if not hf_auth_token:
             raise RuntimeError("Hugging Face auth token is missing")
             
