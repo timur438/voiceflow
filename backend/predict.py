@@ -42,7 +42,6 @@ class Predictor(BasePredictor):
         self.diarization_model = Pipeline.from_pretrained(
             "pyannote/speaker-diarization-3.1",
             use_auth_token=hf_auth_token,
-            local_files_only=False,
         ).to(torch.device("cuda"))
         self.summarizer = TranscriptSummarizer()
 
