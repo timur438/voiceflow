@@ -1,4 +1,4 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException, Response
+from fastapi import FastAPI, UploadFile, File, HTTPException, Response, Body
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from predict import Predictor, Output
@@ -46,8 +46,8 @@ async def generate_status_messages(file_content: bytes, request: TranscriptionRe
 
 @app.post("/transcribe")
 async def transcribe(
-    request: TranscriptionRequest,
     file: UploadFile = File(..., max_size=1000 * 1024 * 1024),  # 1000 МБ
+    request: TranscriptionRequest = Body(...),  # Принимаем объект через Body
 ):
     try:
         if file.size > 1000 * 1024 * 1024:
