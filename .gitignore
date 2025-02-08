@@ -47,3 +47,4 @@ package-lock.json
 src/assets/.DS_Store
 
 venv
+package-lock.json

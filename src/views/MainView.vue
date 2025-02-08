@@ -145,13 +145,34 @@ export default defineComponent({
     const handleFileChange = (event: Event) => {
       const input = event.target as HTMLInputElement;
       if (input.files && input.files[0]) {
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const file = input.files[0];
-        // Handle file upload logic here
+        uploadFile(file);
+      }
+    };
+    
+    const uploadFile = async (file: File) => {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      try {
+        const response = await fetch('https://voiceflow.ru/api/transcribe', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!response.ok) {
+          throw new Error('Ошибка при отправке файла на сервер');
+        }
+
+        const result = await response.json();
+        console.log('Результат транскрипции:', result);
+        // Здесь можно добавить логику для обработки результата транскрипции
+      } catch (error) {
+        console.error('Ошибка:', error);
       }
     };
 
-    return { goToHome, goToSettings, goToMeeting, meetings, showPopup, showUploadPopup, meetingToDelete, meetingName, fileInput, confirmDelete, deleteMeeting, cancelDelete, openFileDialog, handleFileChange };
+    return { goToHome, goToSettings, goToMeeting, meetings, showPopup, showUploadPopup, meetingToDelete, meetingName, fileInput, confirmDelete, deleteMeeting, cancelDelete, openFileDialog, handleFileChange, uploadFile };
   }
 });
 </script>
