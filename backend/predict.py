@@ -32,7 +32,7 @@ class Predictor(BasePredictor):
         model_name = "large-v3"
         self.model = WhisperModel(
             model_name,
-            device="cuda" if torch.cuda.is_available() else "cpu",
+            device="cpu",
             compute_type="float16",
         )
         hf_auth_token = os.getenv("HF_TOKEN")
