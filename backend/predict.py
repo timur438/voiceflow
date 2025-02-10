@@ -151,6 +151,7 @@ class Predictor:
                 "--max-len", "1",
                 "--threads", "4"
             ]
+            
 
             if language:
                 command.extend(["--language", language])
