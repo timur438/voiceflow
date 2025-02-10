@@ -9,3 +9,7 @@ torchtext
 llama-cpp-python
 cog
 python-dotenv
+python-multipart
+pydub
+python-magic
+numpy

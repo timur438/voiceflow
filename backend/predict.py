@@ -131,11 +131,17 @@ class Predictor:
     def _process_audio(self, wav_file: str, language: str = None, translate: bool = False) -> dict:
         try:
             print(f"Начало обработки аудио файла")
+            print(f"Параметры: wav_file={wav_file}, language={language}, translate={translate}")
+            
             if not os.path.exists(self.model_path):
                 raise FileNotFoundError(f"Model file not found: {self.model_path}")
+            
             if not os.path.exists(wav_file):
                 raise FileNotFoundError(f"WAV file not found: {wav_file}")
+                
+            print(f"Файлы существуют, размер WAV: {os.path.getsize(wav_file)} bytes")
 
+            # Формируем команду для whisper.cpp
             command = [
                 "./whisper.cpp/build/bin/main",
                 "-m", self.model_path,
@@ -155,29 +161,59 @@ class Predictor:
             output_json = f"{tempfile.mktemp()}.json"
             command.extend(["-of", output_json])
 
+            print(f"Запуск команды: {' '.join(command)}")
+
             try:
                 process = subprocess.Popen(
                     command,
                     stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE
+                    stderr=subprocess.PIPE,
+                    text=True  # Для получения текстового вывода
                 )
-                _, error = process.communicate()
+                
+                # Читаем вывод в реальном времени
+                while True:
+                    output = process.stdout.readline()
+                    if output:
+                        print(f"Whisper output: {output.strip()}")
+                    error = process.stderr.readline()
+                    if error:
+                        print(f"Whisper error: {error.strip()}")
+                        
+                    # Проверяем, завершился ли процесс
+                    if process.poll() is not None:
+                        break
 
                 if process.returncode != 0:
-                    raise Exception(f"Error processing audio: {error.decode('utf-8')}")
+                    # Получаем оставшиеся ошибки
+                    _, remaining_error = process.communicate()
+                    error_message = f"Whisper process failed with code {process.returncode}: {remaining_error}"
+                    print(error_message)
+                    raise Exception(error_message)
+
+                print(f"Проверка наличия output_json: {output_json}")
+                if not os.path.exists(output_json):
+                    raise FileNotFoundError(f"Output JSON file was not created: {output_json}")
 
                 with open(output_json, 'r') as f:
                     import json
                     result = json.load(f)
+                    print(f"JSON успешно прочитан, количество сегментов: {len(result.get('segments', []))}")
+                    return result
 
-                return result
+            except Exception as e:
+                print(f"Ошибка при выполнении whisper.cpp: {str(e)}")
+                raise
             finally:
                 if os.path.exists(output_json):
                     os.remove(output_json)
+                    print(f"Временный JSON файл удален: {output_json}")
+
         except Exception as e:
             print(f"Ошибка при обработке аудио: {str(e)}")
-            raise
-
+            import traceback
+            print(f"Полный стек ошибки:\n{traceback.format_exc()}")
+            raise Exception(f"Error processing audio: {str(e)}")
 
     async def predict(
         self,
