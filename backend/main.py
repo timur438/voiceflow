@@ -42,7 +42,7 @@ async def transcribe(file: UploadFile = File(...)):
         # Конвертация в base64
         file_string = base64.b64encode(file_content).decode('utf-8')
 
-        result: TranscriptionResult = predictor.predict(
+        result: TranscriptionResult = await predictor.predict(
             file_string=file_string,
             group_segments=True,
             transcript_output_format="both",  # получаем и текст, и слова
@@ -69,9 +69,12 @@ async def transcribe(file: UploadFile = File(...)):
         return response
 
     except Exception as e:
+        import traceback
+        error_details = f"Error processing file: {str(e)}\n{traceback.format_exc()}"
+        print(error_details) 
         raise HTTPException(
             status_code=500,
-            detail=f"Error processing file: {str(e)}"
+            detail=error_details
         )
 
 if __name__ == "__main__":
