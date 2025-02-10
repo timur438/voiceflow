@@ -1,3 +1,4 @@
+import json
 import subprocess
 import os
 import base64
@@ -58,12 +59,10 @@ class TranscriptionQueue:
 
 class Predictor:
     def setup(self):
-        """Инициализация моделей"""
         self.model_path = "./whisper.cpp/models/ggml-large-v3-turbo.bin"
         if not os.path.exists(self.model_path):
             self._download_model("large-v3-turbo")
 
-        # Инициализация модели диаризации
         hf_token = os.getenv("HF_TOKEN")
         if not hf_token:
             raise RuntimeError("Hugging Face auth token is missing")
@@ -73,7 +72,6 @@ class Predictor:
             use_auth_token=hf_token
         ).to(torch.device("cuda" if torch.cuda.is_available() else "cpu"))
 
-        # Инициализация очереди транскрипций
         self.transcription_queue = TranscriptionQueue(max_concurrent=2)
 
     def _download_model(self, model_name):
@@ -130,18 +128,12 @@ class Predictor:
 
     def _process_audio(self, wav_file: str, language: str = None, translate: bool = False) -> dict:
         try:
-            print(f"Начало обработки аудио файла")
-            print(f"Параметры: wav_file={wav_file}, language={language}, translate={translate}")
-            
             if not os.path.exists(self.model_path):
                 raise FileNotFoundError(f"Model file not found: {self.model_path}")
             
             if not os.path.exists(wav_file):
                 raise FileNotFoundError(f"WAV file not found: {wav_file}")
-                
-            print(f"Файлы существуют, размер WAV: {os.path.getsize(wav_file)} bytes")
 
-            # Формируем команду для whisper.cpp
             command = [
                 "./whisper.cpp/build/bin/whisper-cli",
                 "-m", self.model_path,
@@ -151,7 +143,6 @@ class Predictor:
                 "--max-len", "1",
                 "--threads", "4"
             ]
-            
 
             if language:
                 command.extend(["--language", language])
@@ -161,59 +152,30 @@ class Predictor:
             output_json = f"{tempfile.mktemp()}.json"
             command.extend(["-of", output_json])
 
-            print(f"Запуск команды: {' '.join(command)}")
-
             try:
                 process = subprocess.Popen(
                     command,
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,
-                    text=True  # Для получения текстового вывода
+                    text=True
                 )
                 
-                # Читаем вывод в реальном времени
-                while True:
-                    output = process.stdout.readline()
-                    if output:
-                        print(f"Whisper output: {output.strip()}")
-                    error = process.stderr.readline()
-                    if error:
-                        print(f"Whisper error: {error.strip()}")
-                        
-                    # Проверяем, завершился ли процесс
-                    if process.poll() is not None:
-                        break
+                process.wait()
 
                 if process.returncode != 0:
-                    # Получаем оставшиеся ошибки
-                    _, remaining_error = process.communicate()
-                    error_message = f"Whisper process failed with code {process.returncode}: {remaining_error}"
-                    print(error_message)
-                    raise Exception(error_message)
-
-                print(f"Проверка наличия output_json: {output_json}")
-                if not os.path.exists(output_json):
-                    raise FileNotFoundError(f"Output JSON file was not created: {output_json}")
+                    _, error = process.communicate()
+                    raise Exception(f"Whisper process failed with code {process.returncode}: {error}")
 
                 with open(output_json, 'r') as f:
-                    import json
-                    result = json.load(f)
-                    print(f"JSON успешно прочитан, количество сегментов: {len(result.get('segments', []))}")
-                    return result
+                    return json.load(f)
 
-            except Exception as e:
-                print(f"Ошибка при выполнении whisper.cpp: {str(e)}")
-                raise
             finally:
                 if os.path.exists(output_json):
                     os.remove(output_json)
-                    print(f"Временный JSON файл удален: {output_json}")
 
         except Exception as e:
-            print(f"Ошибка при обработке аудио: {str(e)}")
-            import traceback
-            print(f"Полный стек ошибки:\n{traceback.format_exc()}")
             raise Exception(f"Error processing audio: {str(e)}")
+
 
     async def predict(
         self,

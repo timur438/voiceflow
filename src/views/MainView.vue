@@ -121,20 +121,6 @@ interface Meeting {
   length: string;
 }
 
-interface TranscriptionSegment {
-  text: string;
-  start: number;
-  end: number;
-  speaker: string;
-  words?: unknown[];
-}
-
-interface TranscriptionResponse {
-  segments: TranscriptionSegment[];
-  num_speakers: number;
-  language: string;
-}
-
 export default defineComponent({
   name: 'MainView',
   components: {
@@ -237,28 +223,18 @@ export default defineComponent({
         return;
       }
 
-      // Проверяем файл
-      console.log('Отправляемый файл:', {
-        name: selectedFile.value.name,
-        type: selectedFile.value.type,
-        size: selectedFile.value.size
-      });
-
       isUploading.value = true;
       const formData = new FormData();
       formData.append('file', selectedFile.value);
 
       try {
-        console.log('Начало загрузки файла');
         const response = await fetch('https://voiceflow.ru/api/transcribe', {
           method: 'POST',
           body: formData
         });
 
-        console.log('Получен ответ:', response.status);
-
         if (response.status === 202) {
-          console.log('Файл принят в обработку');
+          // Файл успешно принят сервером
           meetings.value.unshift({
             id: meetings.value.length + 1,
             date: new Date().toLocaleDateString(),
@@ -266,25 +242,18 @@ export default defineComponent({
             status: 'new',
             length: t('processing')
           });
-          closeUploadPopup();
+          closeUploadPopup(); // Закрываем попап
           return;
         }
 
         if (!response.ok) {
-          const errorData = await response.json();
-          console.error('Ошибка сервера:', {
-            status: response.status,
-            statusText: response.statusText,
-            error: errorData
-          });
           throw new Error(t('serverError', { 
             status: response.status, 
             statusText: response.statusText 
           }));
         }
 
-        const result = await response.json() as TranscriptionResponse;
-        console.log('Результат транскрипции:', result);
+        const result = await response.json();
         
         const existingMeeting = meetings.value.find(m => m.name === meetingName.value);
         if (existingMeeting && result.segments.length > 0) {
@@ -293,7 +262,6 @@ export default defineComponent({
         }
 
       } catch (error) {
-        console.error('Подробности ошибки:', error);
         alert(t('uploadError', { 
           error: error instanceof Error ? error.message : t('unknownError')
         }));
@@ -301,6 +269,7 @@ export default defineComponent({
         isUploading.value = false;
       }
     };
+
 
     return {
       goToHome,
