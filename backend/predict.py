@@ -1,40 +1,64 @@
 import subprocess
 import os
 import base64
+import asyncio
 from typing import Optional, List
 from pydantic import BaseModel
 import tempfile
-from ctypes import *
 import torch
 import torchaudio
 from pyannote.audio import Pipeline
+from queue import Queue
+from threading import Thread, Lock
+import time
 
 class TranscriptionSegment(BaseModel):
     text: str
     start: float
     end: float
-    speaker: str  # Добавлен speaker
+    speaker: str
     words: Optional[List[dict]] = None
 
 class TranscriptionResult(BaseModel):
     segments: List[TranscriptionSegment]
     language: str
-    num_speakers: int  # Теперь обязательное поле
+    num_speakers: int
     text: str
     translation: Optional[str] = None
+
+class TranscriptionQueue:
+    def __init__(self, max_concurrent=1):
+        self.queue = Queue()
+        self.max_concurrent = max_concurrent
+        self.current_tasks = 0
+        self.lock = Lock()
+        self.worker = Thread(target=self._process_queue, daemon=True)
+        self.worker.start()
+
+    def add_task(self, task):
+        return self.queue.put(task)
+
+    def _process_queue(self):
+        while True:
+            task = self.queue.get()
+            with self.lock:
+                while self.current_tasks >= self.max_concurrent:
+                    time.sleep(1)
+                self.current_tasks += 1
+            
+            try:
+                task()
+            finally:
+                with self.lock:
+                    self.current_tasks -= 1
+                self.queue.task_done()
 
 class Predictor:
     def setup(self):
         """Инициализация моделей"""
-        # Инициализация whisper.cpp
-        lib_path = os.path.join(os.path.dirname(__file__), "whisper.cpp/build/libwhisper.so")
-        self.whisper_lib = CDLL(lib_path)
-        
-        self.model_path = "models/ggml-medium.bin"
+        self.model_path = "./whisper.cpp/models/ggml-large-v3-turbo.bin"
         if not os.path.exists(self.model_path):
-            self._download_model("medium")
-            
-        self.ctx = self.whisper_lib.whisper_init_from_file(self.model_path.encode('utf-8'))
+            self._download_model("large-v3-turbo")
 
         # Инициализация модели диаризации
         hf_token = os.getenv("HF_TOKEN")
@@ -46,16 +70,25 @@ class Predictor:
             use_auth_token=hf_token
         ).to(torch.device("cuda" if torch.cuda.is_available() else "cpu"))
 
-    def _convert_to_wav(input_file: str) -> str:
-        """Конвертация аудио в WAV формат"""
+        # Инициализация очереди транскрипций
+        self.transcription_queue = TranscriptionQueue(max_concurrent=2)
+
+    def _download_model(self, model_name):
+        subprocess.run([
+            "bash",
+            "./whisper.cpp/models/download-ggml-model.sh",
+            model_name
+        ], check=True)
+
+    def _convert_to_wav(self, input_file: str) -> str:
         output_file = f"{tempfile.mktemp()}.wav"
         try:
             subprocess.run([
                 "ffmpeg",
                 "-i", input_file,
-                "-ar", "16000",  # частота дискретизации 16kHz
-                "-ac", "1",      # моно
-                "-c:a", "pcm_s16le",  # 16-bit PCM
+                "-ar", "16000",
+                "-ac", "1",
+                "-c:a", "pcm_s16le",
                 output_file
             ], check=True, capture_output=True)
             return output_file
@@ -64,39 +97,80 @@ class Predictor:
 
     def _get_speaker_segments(self, audio_path, num_speakers=None):
         """Получение сегментов с информацией о спикерах"""
-        waveform, sample_rate = torchaudio.load(audio_path)
-        diarization = self.diarization_pipeline(
-            {"waveform": waveform, "sample_rate": sample_rate},
-            num_speakers=num_speakers
-        )
-        
-        # Преобразование результатов диаризации в удобный формат
-        speaker_segments = []
-        for turn, _, speaker in diarization.itertracks(yield_label=True):
-            speaker_segments.append({
-                "start": turn.start,
-                "end": turn.end,
-                "speaker": speaker
-            })
+        try:
+            waveform, sample_rate = torchaudio.load(audio_path)
             
-        return speaker_segments, len(set(s["speaker"] for s in speaker_segments))
+            # Освобождаем память GPU после использования
+            with torch.cuda.device('cuda' if torch.cuda.is_available() else 'cpu'):
+                diarization = self.diarization_pipeline(
+                    {"waveform": waveform, "sample_rate": sample_rate},
+                    num_speakers=num_speakers
+                )
+                
+                speaker_segments = []
+                for turn, _, speaker in diarization.itertracks(yield_label=True):
+                    speaker_segments.append({
+                        "start": turn.start,
+                        "end": turn.end,
+                        "speaker": speaker
+                    })
+                
+                num_speakers = len(set(s["speaker"] for s in speaker_segments))
+                
+                # Явно освобождаем память
+                del diarization
+                torch.cuda.empty_cache()
+                
+                return speaker_segments, num_speakers
+        except Exception as e:
+            raise RuntimeError(f"Diarization error: {str(e)}")
 
-    def _assign_speakers_to_segments(self, transcribed_segments, speaker_segments):
-        """Присваивание спикеров транскрибированным сегментам"""
-        for segment in transcribed_segments:
-            # Находим спикера, который говорил большую часть сегмента
-            segment_center = (segment["start"] + segment["end"]) / 2
-            relevant_speakers = []
-            
-            for sp_segment in speaker_segments:
-                if (sp_segment["start"] <= segment_center <= sp_segment["end"]):
-                    relevant_speakers.append(sp_segment["speaker"])
-            
-            segment["speaker"] = relevant_speakers[0] if relevant_speakers else "UNKNOWN"
-        
-        return transcribed_segments
+    def _process_audio(self, wav_file: str, language: str = None, translate: bool = False) -> dict:
+        if not os.path.exists(self.model_path):
+            raise FileNotFoundError(f"Model file not found: {self.model_path}")
+        if not os.path.exists(wav_file):
+            raise FileNotFoundError(f"WAV file not found: {wav_file}")
 
-    def predict(
+        command = [
+            "./whisper.cpp/build/bin/main",
+            "-m", self.model_path,
+            "-f", wav_file,
+            "--output-json",
+            "--print-progress",
+            "--print-timestamps",
+            "--max-len", "1",
+            "--threads", "4"
+        ]
+
+        if language:
+            command.extend(["--language", language])
+        if translate:
+            command.append("--translate")
+
+        output_json = f"{tempfile.mktemp()}.json"
+        command.extend(["-of", output_json])
+
+        try:
+            process = subprocess.Popen(
+                command,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE
+            )
+            _, error = process.communicate()
+
+            if process.returncode != 0:
+                raise Exception(f"Error processing audio: {error.decode('utf-8')}")
+
+            with open(output_json, 'r') as f:
+                import json
+                result = json.load(f)
+
+            return result
+        finally:
+            if os.path.exists(output_json):
+                os.remove(output_json)
+
+    async def predict(
         self,
         file_string: str = None,
         group_segments: bool = True,
@@ -119,82 +193,65 @@ class Predictor:
 
             wav_file = self._convert_to_wav(temp_input)
 
-            # Получение информации о спикерах
-            speaker_segments, detected_speakers = self._get_speaker_segments(
-                wav_file, 
-                num_speakers
-            )
+            # Добавляем задачу в очередь
+            future_result = {}
+            
+            def process_task():
+                try:
+                    # Получение информации о спикерах
+                    speaker_segments, detected_speakers = self._get_speaker_segments(
+                        wav_file, 
+                        num_speakers
+                    )
 
-            # Настройка параметров whisper
-            params = self.whisper_lib.whisper_full_default_params(
-                self.whisper_lib.WHISPER_SAMPLING_GREEDY
-            )
-            
-            params.print_progress = False
-            params.print_timestamps = True
-            params.translate = translate
-            if language:
-                params.language = language.encode('utf-8')
-            params.n_threads = 4
-            params.token_timestamps = True
-            
-            # Транскрипция
-            result = self.whisper_lib.whisper_full(
-                self.ctx,
-                params,
-                wav_file.encode('utf-8'),
-                None
-            )
+                    # Транскрипция
+                    result = self._process_audio(wav_file, language, translate)
 
-            # Получение результатов
-            segments = []
-            n_segments = self.whisper_lib.whisper_full_n_segments(self.ctx)
-            full_text = []
-            
-            for i in range(n_segments):
-                text = self.whisper_lib.whisper_full_get_segment_text(self.ctx, i)
-                start = self.whisper_lib.whisper_full_get_segment_t0(self.ctx, i)
-                end = self.whisper_lib.whisper_full_get_segment_t1(self.ctx, i)
-                
-                words = []
-                if transcript_output_format in ("words_only", "both"):
-                    n_tokens = self.whisper_lib.whisper_full_n_tokens(self.ctx, i)
-                    for j in range(n_tokens):
-                        word = self.whisper_lib.whisper_full_get_token_text(self.ctx, i, j)
-                        t0 = self.whisper_lib.whisper_full_get_token_t0(self.ctx, i, j)
-                        t1 = self.whisper_lib.whisper_full_get_token_t1(self.ctx, i, j)
+                    # Обработка результатов
+                    segments = []
+                    full_text = []
+
+                    for segment in result["segments"]:
+                        text = segment["text"].strip()
+                        full_text.append(text)
+
+                        segment_center = (segment["start"] + segment["end"]) / 2
+                        current_speaker = "UNKNOWN"
                         
-                        words.append({
-                            "word": word.decode('utf-8'),
-                            "start": t0,
-                            "end": t1
-                        })
+                        for sp_segment in speaker_segments:
+                            if sp_segment["start"] <= segment_center <= sp_segment["end"]:
+                                current_speaker = sp_segment["speaker"]
+                                break
 
-                segment_text = text.decode('utf-8')
-                full_text.append(segment_text)
-                
-                segments.append({
-                    "text": segment_text,
-                    "start": start,
-                    "end": end,
-                    "words": words if words else None
-                })
+                        segments.append(TranscriptionSegment(
+                            text=text,
+                            start=segment["start"],
+                            end=segment["end"],
+                            speaker=current_speaker,
+                            words=segment.get("words", [])
+                        ))
 
-            # Присваивание спикеров сегментам
-            segments = self._assign_speakers_to_segments(segments, speaker_segments)
+                    future_result['result'] = TranscriptionResult(
+                        segments=segments,
+                        language=result.get("language", "auto"),
+                        num_speakers=detected_speakers,
+                        text=" ".join(full_text),
+                        translation=None
+                    )
+                except Exception as e:
+                    future_result['error'] = e
+
+            # Добавляем задачу в очередь и ждем результата
+            self.transcription_queue.add_task(process_task)
             
-            detected_language = self.whisper_lib.whisper_full_get_detected_language(self.ctx)
-            
-            return TranscriptionResult(
-                segments=[TranscriptionSegment(**s) for s in segments],
-                language=detected_language.decode('utf-8'),
-                num_speakers=detected_speakers,
-                text=" ".join(full_text),
-                translation=None
-            )
+            # Ждем результата
+            while 'result' not in future_result and 'error' not in future_result:
+                await asyncio.sleep(0.1)
 
-        except Exception as e:
-            raise RuntimeError(f"Transcription error: {str(e)}")
+            if 'error' in future_result:
+                raise future_result['error']
+
+            return future_result['result']
 
         finally:
             # Очистка временных файлов
@@ -202,4 +259,3 @@ class Predictor:
                 os.remove(temp_input)
             if wav_file and os.path.exists(wav_file):
                 os.remove(wav_file)
-
