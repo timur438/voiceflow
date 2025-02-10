@@ -229,13 +229,18 @@ export default defineComponent({
         });
 
         if (!response.ok) {
-          throw new Error('Ошибка при загрузке файла');
+          const errorData = await response.json();
+          console.error('Ошибка сервера:', {
+            status: response.status,
+            statusText: response.statusText,
+            error: errorData
+          });
+          throw new Error(`Ошибка сервера: ${response.status} ${response.statusText}`);
         }
 
         const result = await response.json();
         console.log('Результат транскрипции:', result);
         
-        // Добавляем новую встречу в список
         meetings.value.unshift({
           id: meetings.value.length + 1,
           date: new Date().toLocaleDateString(),
@@ -246,8 +251,8 @@ export default defineComponent({
 
         closeUploadPopup();
       } catch (error) {
-        console.error('Ошибка:', error);
-        alert('Произошла ошибка при загрузке файла');
+        console.error('Подробности ошибки:', error);
+        alert(`Ошибка при загрузке файла: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`);
       }
     };
 
@@ -278,3 +283,4 @@ export default defineComponent({
 </script>
 
 <style scoped src="@/assets/scss/MainView.scss"></style>
+
