@@ -48,6 +48,11 @@ async def transcribe(file: UploadFile = File(...)):
                 )
             file_content.extend(chunk)
 
+        response = JSONResponse(
+            status_code=202,
+            content={"message": "File accepted for processing"}
+        )
+
         # Конвертация в base64
         file_string = base64.b64encode(file_content).decode('utf-8')
 
