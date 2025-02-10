@@ -143,12 +143,11 @@ class Predictor:
 
             # Формируем команду для whisper.cpp
             command = [
-                "./whisper.cpp/build/bin/main",
+                "./whisper.cpp/build/bin/whisper-cli",
                 "-m", self.model_path,
                 "-f", wav_file,
                 "--output-json",
                 "--print-progress",
-                "--print-timestamps",
                 "--max-len", "1",
                 "--threads", "4"
             ]
