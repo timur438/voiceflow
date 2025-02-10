@@ -1,85 +1,79 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException, Form
+from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-from predict import Predictor, Output
-import tempfile
-import os
-import shutil
-import json
+from typing import List, Optional
+import base64
+from predict import Predictor, TranscriptionResult, TranscriptionSegment
 
 app = FastAPI()
 
+# Инициализация предиктора при старте приложения
 predictor = Predictor()
 predictor.setup()
 
-class TranscriptionRequest(BaseModel):
-    group_segments: bool = True
-    transcript_output_format: str = "both"
-    num_speakers: int = None
-    translate: bool = False
-    language: str = None
-    prompt: str = None
-    summary_type: str = "summary"
-    offset_seconds: int = 0
+class SpeakerSegment(BaseModel):
+    text: str
+    start: float
+    end: float
+    speaker: str
+    words: Optional[List[dict]] = None
 
-@app.post("/transcribe")
-async def transcribe(
-    file: UploadFile = File(...), 
-    request: str = Form(...),
-):
+class TranscriptionResponse(BaseModel):
+    segments: List[SpeakerSegment]
+    num_speakers: int
+    language: str
+
+@app.post("/transcribe", response_model=TranscriptionResponse)
+async def transcribe(file: UploadFile = File(...)):
     try:
-        request_data = json.loads(request)
-        transcription_request = TranscriptionRequest(**request_data)
-
-        temp_file_path = await save_temp_file(file)
-
-        result = await generate_status_messages(temp_file_path, transcription_request)
-
-        if os.path.exists(temp_file_path):
-            os.remove(temp_file_path)
-
-        return {"status": "success", "transcript": result['segments'], "summary": result.get('summary', "No summary available")}
-    
-    except Exception as e:
-        if os.path.exists(temp_file_path):
-            os.remove(temp_file_path)
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-async def save_temp_file(file: UploadFile):
-    try:
-        temp_dir = "temp_files"
-        os.makedirs(temp_dir, exist_ok=True)
+        MAX_FILE_SIZE = 1000 * 1024 * 1024  # 1000MB в байтах
+        file_size = 0
+        file_content = bytearray()
         
-        temp_file_path = os.path.join(temp_dir, file.filename)
+        while chunk := await file.read(1024 * 1024):  # Чтение по 1MB
+            file_size += len(chunk)
+            if file_size > MAX_FILE_SIZE:
+                raise HTTPException(
+                    status_code=413,
+                    detail="File size too large. Maximum size is 1000MB"
+                )
+            file_content.extend(chunk)
 
-        with open(temp_file_path, "wb") as temp_file:
-            content = await file.read()
-            temp_file.write(content)
+        # Конвертация в base64
+        file_string = base64.b64encode(file_content).decode('utf-8')
 
-        return temp_file_path
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error saving temporary file: {str(e)}")
-
-
-async def generate_status_messages(file_path: str, request: TranscriptionRequest):
-    try:
-        result = predictor.predict(
-            file=file_path,
-            group_segments=request.group_segments,
-            transcript_output_format=request.transcript_output_format,
-            num_speakers=request.num_speakers,
-            translate=request.translate,
-            language=request.language,
-            prompt=request.prompt,
-            summary_type=request.summary_type,
-            offset_seconds=request.offset_seconds,
+        result: TranscriptionResult = predictor.predict(
+            file_string=file_string,
+            group_segments=True,
+            transcript_output_format="both",  # получаем и текст, и слова
+            num_speakers=None,  # автоопределение количества спикеров
+            translate=False,
+            language=None,  # автоопределение языка
         )
 
-        return {
-            "segments": result.segments,
-            "summary": result.summary
-        }
+        # Формирование ответа
+        response = TranscriptionResponse(
+            segments=[
+                SpeakerSegment(
+                    text=segment.text,
+                    start=segment.start,
+                    end=segment.end,
+                    speaker=segment.speaker,
+                    words=segment.words
+                ) for segment in result.segments
+            ],
+            num_speakers=result.num_speakers,
+            language=result.language
+        )
+
+        return response
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error processing file: {str(e)}"
+        )
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
