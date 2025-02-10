@@ -11,6 +11,9 @@ from pyannote.audio import Pipeline
 from queue import Queue
 from threading import Thread, Lock
 import time
+from dotenv import load_dotenv
+
+load_dotenv()
 
 class TranscriptionSegment(BaseModel):
     text: str
