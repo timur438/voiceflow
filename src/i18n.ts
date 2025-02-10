@@ -47,7 +47,15 @@ const messages = {
     keywords: 'Keywords',
     participants: 'Participants',
     transcript: 'Transcript',
-    summary: 'Summary'
+    summary: 'Summary',
+    uploading: 'Uploading...',
+    processing: 'Processing...',
+    fileTooBig: 'File is too large. Maximum size is 1GB',
+    selectFileAndName: 'Select a file and enter meeting name',
+    serverError: 'Server error: {status} {statusText}',
+    uploadError: 'Upload error: {error}',
+    unknownError: 'Unknown error',
+
   },
   ru: {
     welcome: 'Добро пожаловать',
@@ -95,7 +103,14 @@ const messages = {
     keywords: 'Ключевые слова',
     participants: 'Участники',
     transcript: 'Транскрипт',
-    summary: 'Саммари'
+    summary: 'Саммари',
+    uploading: 'Загрузка...',
+    processing: 'Обработка...',
+    fileTooBig: 'Файл слишком большой. Максимальный размер 1GB',
+    selectFileAndName: 'Выберите файл и введите название встречи',
+    serverError: 'Ошибка сервера: {status} {statusText}',
+    uploadError: 'Ошибка при загрузке файла: {error}',
+    unknownError: 'Неизвестная ошибка',
   }
 };
 

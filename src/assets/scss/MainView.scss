@@ -390,12 +390,14 @@
   }
 }
 
-.upload-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  
-  &:hover {
-    background: linear-gradient(to bottom, $gradient-start, $gradient-end);
+.upload-button {
+  &:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    
+    &:hover {
+      background: linear-gradient(to bottom, $gradient-start, $gradient-end);
+    }
   }
 }
 

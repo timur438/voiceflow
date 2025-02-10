@@ -97,9 +97,9 @@
           <button 
             class="upload-button" 
             @click="uploadFile" 
-            :disabled="!selectedFile || !meetingName"
+            :disabled="!selectedFile || !meetingName || isUploading"
           >
-            {{ $t('uploadMeeting') }}
+            {{ isUploading ? $t('uploading') : $t('uploadMeeting') }}
           </button>
         </div>
       </div>
@@ -110,6 +110,7 @@
 <script lang="ts">
 import { defineComponent, ref } from 'vue';
 import { useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import MainSidebar from '@/components/MainSidebar.vue';
 
 interface Meeting {
@@ -120,6 +121,20 @@ interface Meeting {
   length: string;
 }
 
+interface TranscriptionSegment {
+  text: string;
+  start: number;
+  end: number;
+  speaker: string;
+  words?: unknown[];
+}
+
+interface TranscriptionResponse {
+  segments: TranscriptionSegment[];
+  num_speakers: number;
+  language: string;
+}
+
 export default defineComponent({
   name: 'MainView',
   components: {
@@ -127,6 +142,7 @@ export default defineComponent({
   },
   setup() {
     const router = useRouter();
+    const { t } = useI18n();
     const showPopup = ref(false);
     const showUploadPopup = ref(false);
     const meetingToDelete = ref<Meeting | null>(null);
@@ -134,6 +150,7 @@ export default defineComponent({
     const fileInput = ref<HTMLInputElement | null>(null);
     const selectedFile = ref<File | null>(null);
     const isFileSelected = ref(false);
+    const isUploading = ref(false);
 
     const meetings = ref<Meeting[]>(Array.from({ length: 30 }, (_, i) => ({
       id: i + 1,
@@ -177,6 +194,7 @@ export default defineComponent({
       selectedFile.value = null;
       isFileSelected.value = false;
       meetingName.value = '';
+      isUploading.value = false;
     };
 
     const openFileDialog = () => {
@@ -188,7 +206,7 @@ export default defineComponent({
       if (input.files && input.files[0]) {
         const file = input.files[0];
         if (file.size > 1000 * 1024 * 1024) {
-          alert('Файл слишком большой. Максимальный размер 1GB');
+          alert(t('fileTooBig'));
           return;
         }
         selectedFile.value = file;
@@ -201,7 +219,7 @@ export default defineComponent({
       if (event.dataTransfer?.files.length) {
         const file = event.dataTransfer.files[0];
         if (file.size > 1000 * 1024 * 1024) {
-          alert('Файл слишком большой. Максимальный размер 1GB');
+          alert(t('fileTooBig'));
           return;
         }
         selectedFile.value = file;
@@ -215,10 +233,11 @@ export default defineComponent({
 
     const uploadFile = async () => {
       if (!selectedFile.value || !meetingName.value) {
-        alert('Выберите файл и введите название встречи');
+        alert(t('selectFileAndName'));
         return;
       }
 
+      isUploading.value = true;
       const formData = new FormData();
       formData.append('file', selectedFile.value);
 
@@ -228,6 +247,18 @@ export default defineComponent({
           body: formData
         });
 
+        if (response.status === 202) {
+          meetings.value.unshift({
+            id: meetings.value.length + 1,
+            date: new Date().toLocaleDateString(),
+            name: meetingName.value,
+            status: 'new',
+            length: t('processing')
+          });
+          closeUploadPopup();
+          return;
+        }
+
         if (!response.ok) {
           const errorData = await response.json();
           console.error('Ошибка сервера:', {
@@ -235,24 +266,27 @@ export default defineComponent({
             statusText: response.statusText,
             error: errorData
           });
-          throw new Error(`Ошибка сервера: ${response.status} ${response.statusText}`);
+          throw new Error(t('serverError', { 
+            status: response.status, 
+            statusText: response.statusText 
+          }));
         }
 
-        const result = await response.json();
+        const result = await response.json() as TranscriptionResponse;
         console.log('Результат транскрипции:', result);
         
-        meetings.value.unshift({
-          id: meetings.value.length + 1,
-          date: new Date().toLocaleDateString(),
-          name: meetingName.value,
-          status: 'new',
-          length: '0 мин'
-        });
+        const existingMeeting = meetings.value.find(m => m.name === meetingName.value);
+        if (existingMeeting && result.segments.length > 0) {
+          const lastSegment = result.segments[result.segments.length - 1];
+          existingMeeting.length = `${Math.round(lastSegment.end / 60)} мин`;
+        }
 
-        closeUploadPopup();
       } catch (error) {
         console.error('Подробности ошибки:', error);
-        alert(`Ошибка при загрузке файла: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`);
+        alert(t('uploadError', { 
+          error: error instanceof Error ? error.message : t('unknownError')
+        }));
+        isUploading.value = false;
       }
     };
 
@@ -268,6 +302,7 @@ export default defineComponent({
       fileInput,
       selectedFile,
       isFileSelected,
+      isUploading,
       confirmDelete,
       deleteMeeting,
       cancelDelete,
@@ -283,4 +318,3 @@ export default defineComponent({
 </script>
 
 <style scoped src="@/assets/scss/MainView.scss"></style>
-
