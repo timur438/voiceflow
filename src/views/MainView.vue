@@ -40,6 +40,8 @@
         </button>
       </div>
     </div>
+
+    <!-- Delete Confirmation Popup -->
     <div v-if="showPopup" class="popup">
       <div class="popup-content">
         <p class="popup-title">{{ $t('confirmDelete') }}</p>
@@ -50,25 +52,55 @@
         </div>
       </div>
     </div>
+
+    <!-- Upload Popup -->
     <div v-if="showUploadPopup" class="popup">
       <div class="popup-content upload-popup">
         <div class="popup-header">
           <span>{{ $t('uploadFile') }}</span>
-          <button class="close-button" @click="showUploadPopup = false">×</button>
+          <button class="close-button" @click="closeUploadPopup">×</button>
         </div>
         <div class="upload-body">
-          <div class="drop-area" @click="openFileDialog">
-            <p><span>{{ $t('chooseFile') }}</span> {{ $t('orDrag') }}</p>
-            <p class="drop-describe">{{ $t('anyFile') }}</p>
-            <input type="file" ref="fileInput" style="display: none;" @change="handleFileChange" />
+          <div class="drop-area" 
+               @click="openFileDialog"
+               @drop="handleDrop"
+               @dragover="handleDragOver">
+            <template v-if="!isFileSelected">
+              <p><span>{{ $t('chooseFile') }}</span> {{ $t('orDrag') }}</p>
+              <p class="drop-describe">{{ $t('anyFile') }}</p>
+            </template>
+            <template v-else>
+              <div class="selected-file">
+                <img src="@/assets/img/folder.svg" alt="Folder" class="folder-icon" />
+                <span>{{ selectedFile?.name }}</span>
+              </div>
+            </template>
+            <input 
+              type="file" 
+              ref="fileInput" 
+              style="display: none;" 
+              @change="handleFileChange"
+              accept="audio/*,video/*" 
+            />
           </div>
           <div class="meeting-name">
             <label for="meeting-name">{{ $t('meetingName') }}</label>
-            <input type="text" id="meeting-name" v-model="meetingName" :placeholder="$t('meetingNamePlaceholder')" />
+            <input 
+              type="text" 
+              id="meeting-name" 
+              v-model="meetingName" 
+              :placeholder="$t('meetingNamePlaceholder')" 
+            />
           </div>
         </div>
         <div class="popup-footer">
-          <button class="upload-button">{{ $t('uploadMeeting') }}</button>
+          <button 
+            class="upload-button" 
+            @click="uploadFile" 
+            :disabled="!selectedFile || !meetingName"
+          >
+            {{ $t('uploadMeeting') }}
+          </button>
         </div>
       </div>
     </div>
@@ -95,6 +127,22 @@ export default defineComponent({
   },
   setup() {
     const router = useRouter();
+    const showPopup = ref(false);
+    const showUploadPopup = ref(false);
+    const meetingToDelete = ref<Meeting | null>(null);
+    const meetingName = ref('');
+    const fileInput = ref<HTMLInputElement | null>(null);
+    const selectedFile = ref<File | null>(null);
+    const isFileSelected = ref(false);
+
+    const meetings = ref<Meeting[]>(Array.from({ length: 30 }, (_, i) => ({
+      id: i + 1,
+      date: `0${i + 1}.01.2023`,
+      name: `Встреча ${i + 1}`,
+      status: i % 2 === 0 ? 'new' : 'old',
+      length: `${30 + i} мин`
+    })));
+
     const goToHome = () => {
       router.push({ name: 'MainView' });
     };
@@ -107,20 +155,6 @@ export default defineComponent({
     const goToMeeting = (id: number) => {
       router.push({ name: 'MeetingView', params: { id } });
     };
-
-    const meetings = ref<Meeting[]>(Array.from({ length: 30 }, (_, i) => ({
-      id: i + 1,
-      date: `0${i + 1}.01.2023`,
-      name: `Встреча ${i + 1}`,
-      status: i % 2 === 0 ? 'new' : 'old',
-      length: `${30 + i} мин`
-    })));
-
-    const showPopup = ref(false);
-    const showUploadPopup = ref(false);
-    const meetingToDelete = ref<Meeting | null>(null);
-    const meetingName = ref('');
-    const fileInput = ref<HTMLInputElement | null>(null);
 
     const confirmDelete = (meeting: Meeting) => {
       meetingToDelete.value = meeting;
@@ -138,6 +172,13 @@ export default defineComponent({
       showPopup.value = false;
     };
 
+    const closeUploadPopup = () => {
+      showUploadPopup.value = false;
+      selectedFile.value = null;
+      isFileSelected.value = false;
+      meetingName.value = '';
+    };
+
     const openFileDialog = () => {
       fileInput.value?.click();
     };
@@ -146,47 +187,92 @@ export default defineComponent({
       const input = event.target as HTMLInputElement;
       if (input.files && input.files[0]) {
         const file = input.files[0];
-        uploadFile(file);
+        if (file.size > 1000 * 1024 * 1024) {
+          alert('Файл слишком большой. Максимальный размер 1GB');
+          return;
+        }
+        selectedFile.value = file;
+        isFileSelected.value = true;
       }
     };
 
-    const uploadFile = async (file: File) => {
+    const handleDrop = (event: DragEvent) => {
+      event.preventDefault();
+      if (event.dataTransfer?.files.length) {
+        const file = event.dataTransfer.files[0];
+        if (file.size > 1000 * 1024 * 1024) {
+          alert('Файл слишком большой. Максимальный размер 1GB');
+          return;
+        }
+        selectedFile.value = file;
+        isFileSelected.value = true;
+      }
+    };
+
+    const handleDragOver = (event: DragEvent) => {
+      event.preventDefault();
+    };
+
+    const uploadFile = async () => {
+      if (!selectedFile.value || !meetingName.value) {
+        alert('Выберите файл и введите название встречи');
+        return;
+      }
+
       const formData = new FormData();
-      formData.append('file', file);
-
-      const requestData = {
-        group_segments: true,
-        transcript_output_format: 'both',
-        num_speakers: null,
-        translate: false,
-        language: 'ru',
-        prompt: '',
-        summary_type: 'summary',
-        offset_seconds: 0
-      };
-
-      formData.append('request', JSON.stringify(requestData));
+      formData.append('file', selectedFile.value);
 
       try {
         const response = await fetch('https://voiceflow.ru/api/transcribe', {
           method: 'POST',
-          body: formData,
+          body: formData
         });
 
         if (!response.ok) {
-          const errorResponse = await response.json();
-          console.error('Ошибка при отправке файла на сервер:', errorResponse);
-          throw new Error('Ошибка при отправке файла на сервер');
+          throw new Error('Ошибка при загрузке файла');
         }
 
         const result = await response.json();
         console.log('Результат транскрипции:', result);
+        
+        // Добавляем новую встречу в список
+        meetings.value.unshift({
+          id: meetings.value.length + 1,
+          date: new Date().toLocaleDateString(),
+          name: meetingName.value,
+          status: 'new',
+          length: '0 мин'
+        });
+
+        closeUploadPopup();
       } catch (error) {
         console.error('Ошибка:', error);
+        alert('Произошла ошибка при загрузке файла');
       }
     };
 
-    return { goToHome, goToSettings, goToMeeting, meetings, showPopup, showUploadPopup, meetingToDelete, meetingName, fileInput, confirmDelete, deleteMeeting, cancelDelete, openFileDialog, handleFileChange, uploadFile };
+    return {
+      goToHome,
+      goToSettings,
+      goToMeeting,
+      meetings,
+      showPopup,
+      showUploadPopup,
+      meetingToDelete,
+      meetingName,
+      fileInput,
+      selectedFile,
+      isFileSelected,
+      confirmDelete,
+      deleteMeeting,
+      cancelDelete,
+      closeUploadPopup,
+      openFileDialog,
+      handleFileChange,
+      handleDrop,
+      handleDragOver,
+      uploadFile
+    };
   }
 });
 </script>

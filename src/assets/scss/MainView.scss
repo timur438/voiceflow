@@ -260,7 +260,8 @@
 
 .upload-popup {
   padding: 0;
-  max-width: 500px;
+  width: 30vw; 
+  max-width: 90vw;
 }
 
 .popup-header {
@@ -287,6 +288,7 @@
 
 .upload-body {
   padding: 25px;
+  width: calc(100% - 50px); 
 }
 
 .drop-area {
@@ -297,30 +299,37 @@
   margin-bottom: 20px;
   background-color: #f9f9f9;
   cursor: pointer;
-}
+  min-height: 120px;
+  min-width: 100%; // Минимальная ширина
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  box-sizing: border-box; // Важно для правильного расчета размеров
 
-.drop-area p {
-  margin: 0;
-  color: $text-color;
-}
+  p {
+    margin: 0;
+    color: $text-color;
+    width: 100%; // Полная ширина для текста
+  }
 
-.drop-area span {
-  color: $gradient-start;
-  text-decoration: underline;
-  font-size: $font-size-medium;
-}
+  span {
+    color: $gradient-start;
+    text-decoration: underline;
+    font-size: $font-size-medium;
+  }
 
-.drop-describe {
-  font-size: $font-size-small;
-  color: gray;
-  margin-top: 10px;
-}
+  .drop-describe {
+    font-size: $font-size-small;
+    color: gray;
+    margin-top: 10px;
+  }
 
-.drop-area:hover {
-  border-color: $gradient-start;
-  background-color: rgba(53, 170, 255, 0.1);
+  &:hover {
+    border-color: $gradient-start;
+    background-color: rgba(53, 170, 255, 0.1);
+  }
 }
-
 .meeting-name {
   margin-bottom: 20px;
   text-align: left;
@@ -361,6 +370,35 @@
 .upload-button:hover {
   background: linear-gradient(to bottom, $gradient-end, $gradient-start);
 }
+
+.selected-file {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%; 
+  
+  .folder-icon {
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0; 
+  }
+  
+  span {
+    color: $text-color;
+    font-size: $font-size-small;
+    word-break: break-all;
+  }
+}
+
+.upload-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  
+  &:hover {
+    background: linear-gradient(to bottom, $gradient-start, $gradient-end);
+  }
+}
+
 
 * {
   font-family: $font-family;
