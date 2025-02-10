@@ -237,17 +237,28 @@ export default defineComponent({
         return;
       }
 
+      // Проверяем файл
+      console.log('Отправляемый файл:', {
+        name: selectedFile.value.name,
+        type: selectedFile.value.type,
+        size: selectedFile.value.size
+      });
+
       isUploading.value = true;
       const formData = new FormData();
       formData.append('file', selectedFile.value);
 
       try {
+        console.log('Начало загрузки файла');
         const response = await fetch('https://voiceflow.ru/api/transcribe', {
           method: 'POST',
           body: formData
         });
 
+        console.log('Получен ответ:', response.status);
+
         if (response.status === 202) {
+          console.log('Файл принят в обработку');
           meetings.value.unshift({
             id: meetings.value.length + 1,
             date: new Date().toLocaleDateString(),
@@ -286,6 +297,7 @@ export default defineComponent({
         alert(t('uploadError', { 
           error: error instanceof Error ? error.message : t('unknownError')
         }));
+      } finally {
         isUploading.value = false;
       }
     };

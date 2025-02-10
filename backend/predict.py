@@ -129,49 +129,55 @@ class Predictor:
             raise RuntimeError(f"Diarization error: {str(e)}")
 
     def _process_audio(self, wav_file: str, language: str = None, translate: bool = False) -> dict:
-        if not os.path.exists(self.model_path):
-            raise FileNotFoundError(f"Model file not found: {self.model_path}")
-        if not os.path.exists(wav_file):
-            raise FileNotFoundError(f"WAV file not found: {wav_file}")
-
-        command = [
-            "./whisper.cpp/build/bin/main",
-            "-m", self.model_path,
-            "-f", wav_file,
-            "--output-json",
-            "--print-progress",
-            "--print-timestamps",
-            "--max-len", "1",
-            "--threads", "4"
-        ]
-
-        if language:
-            command.extend(["--language", language])
-        if translate:
-            command.append("--translate")
-
-        output_json = f"{tempfile.mktemp()}.json"
-        command.extend(["-of", output_json])
-
         try:
-            process = subprocess.Popen(
-                command,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE
-            )
-            _, error = process.communicate()
+            print(f"Начало обработки аудио файла")
+            if not os.path.exists(self.model_path):
+                raise FileNotFoundError(f"Model file not found: {self.model_path}")
+            if not os.path.exists(wav_file):
+                raise FileNotFoundError(f"WAV file not found: {wav_file}")
 
-            if process.returncode != 0:
-                raise Exception(f"Error processing audio: {error.decode('utf-8')}")
+            command = [
+                "./whisper.cpp/build/bin/main",
+                "-m", self.model_path,
+                "-f", wav_file,
+                "--output-json",
+                "--print-progress",
+                "--print-timestamps",
+                "--max-len", "1",
+                "--threads", "4"
+            ]
 
-            with open(output_json, 'r') as f:
-                import json
-                result = json.load(f)
+            if language:
+                command.extend(["--language", language])
+            if translate:
+                command.append("--translate")
 
-            return result
-        finally:
-            if os.path.exists(output_json):
-                os.remove(output_json)
+            output_json = f"{tempfile.mktemp()}.json"
+            command.extend(["-of", output_json])
+
+            try:
+                process = subprocess.Popen(
+                    command,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE
+                )
+                _, error = process.communicate()
+
+                if process.returncode != 0:
+                    raise Exception(f"Error processing audio: {error.decode('utf-8')}")
+
+                with open(output_json, 'r') as f:
+                    import json
+                    result = json.load(f)
+
+                return result
+            finally:
+                if os.path.exists(output_json):
+                    os.remove(output_json)
+        except Exception as e:
+            print(f"Ошибка при обработке аудио: {str(e)}")
+            raise
+
 
     async def predict(
         self,

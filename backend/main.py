@@ -35,11 +35,13 @@ class TranscriptionResponse(BaseModel):
 @app.post("/transcribe", response_model=TranscriptionResponse)
 async def transcribe(file: UploadFile = File(...)):
     try:
-        MAX_FILE_SIZE = 1000 * 1024 * 1024  # 1000MB в байтах
+        print(f"Получен файл: {file.filename}, content_type: {file.content_type}")  # Добавляем логирование
+        
+        MAX_FILE_SIZE = 1000 * 1024 * 1024
         file_size = 0
         file_content = bytearray()
         
-        while chunk := await file.read(1024 * 1024):  # Чтение по 1MB
+        while chunk := await file.read(1024 * 1024):
             file_size += len(chunk)
             if file_size > MAX_FILE_SIZE:
                 raise HTTPException(
@@ -48,6 +50,10 @@ async def transcribe(file: UploadFile = File(...)):
                 )
             file_content.extend(chunk)
 
+        print(f"Размер файла: {file_size} bytes")  # Добавляем логирование
+
+        # Отправляем предварительный ответ
+        print("Отправка предварительного ответа")
         response = JSONResponse(
             status_code=202,
             content={"message": "File accepted for processing"}
@@ -55,15 +61,22 @@ async def transcribe(file: UploadFile = File(...)):
 
         # Конвертация в base64
         file_string = base64.b64encode(file_content).decode('utf-8')
+        print("Файл конвертирован в base64")
 
-        result: TranscriptionResult = await predictor.predict(
-            file_string=file_string,
-            group_segments=True,
-            transcript_output_format="both",  # получаем и текст, и слова
-            num_speakers=None,  # автоопределение количества спикеров
-            translate=False,
-            language=None,  # автоопределение языка
-        )
+        try:
+            print("Начало обработки файла")
+            result: TranscriptionResult = await predictor.predict(
+                file_string=file_string,
+                group_segments=True,
+                transcript_output_format="both",
+                num_speakers=None,
+                translate=False,
+                language=None,
+            )
+            print("Файл успешно обработан")
+        except Exception as e:
+            print(f"Ошибка при обработке файла в predict: {str(e)}")
+            raise
 
         # Формирование ответа
         response = TranscriptionResponse(
@@ -85,7 +98,7 @@ async def transcribe(file: UploadFile = File(...)):
     except Exception as e:
         import traceback
         error_details = f"Error processing file: {str(e)}\n{traceback.format_exc()}"
-        print(error_details) 
+        print(error_details)
         raise HTTPException(
             status_code=500,
             detail=error_details
