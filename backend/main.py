@@ -32,6 +32,11 @@ class TranscriptionResponse(BaseModel):
     num_speakers: int
     language: str
 
+async def setup_predictor():
+    predictor.setup()
+    if not predictor.transcription_queue.worker.done():
+        await predictor.transcription_queue.worker
+
 async def process_transcription(file_content: bytes):
     try:
         file_string = base64.b64encode(file_content).decode("utf-8")
@@ -86,4 +91,6 @@ async def transcribe(file: UploadFile = File(...), background_tasks: BackgroundT
 
 if __name__ == "__main__":
     import uvicorn
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(setup_predictor())
     uvicorn.run(app, host="0.0.0.0", port=8000)
