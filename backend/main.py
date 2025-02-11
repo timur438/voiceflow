@@ -22,7 +22,8 @@ predictor = Predictor()
 @app.on_event("startup")
 async def startup_event():
     # Инициализация на старте
-    await predictor.setup()
+    predictor = Predictor()
+    predictor.setup()
 
 class SpeakerSegment(BaseModel):
     text: str
