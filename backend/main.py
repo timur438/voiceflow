@@ -32,10 +32,10 @@ class TranscriptionResponse(BaseModel):
     num_speakers: int
     language: str
 
-@app.post("/transcribe", response_model=TranscriptionResponse)
+@app.post("/transcribe")
 async def transcribe(file: UploadFile = File(...)):
     try:
-        print(f"Получен файл: {file.filename}, content_type: {file.content_type}")  # Добавляем логирование
+        print(f"Получен файл: {file.filename}, content_type: {file.content_type}")
         
         MAX_FILE_SIZE = 1000 * 1024 * 1024
         file_size = 0
@@ -50,7 +50,7 @@ async def transcribe(file: UploadFile = File(...)):
                 )
             file_content.extend(chunk)
 
-        print(f"Размер файла: {file_size} bytes")  # Добавляем логирование
+        print(f"Размер файла: {file_size} bytes")
 
         # Отправляем предварительный ответ
         print("Отправка предварительного ответа")
@@ -74,24 +74,17 @@ async def transcribe(file: UploadFile = File(...)):
                 language=None,
             )
             print("Файл успешно обработан")
+            
+            # Выводим результаты транскрипции в консоль
+            print("Результаты транскрипции:")
+            print(f"Язык: {result.language}")
+            print(f"Количество спикеров: {result.num_speakers}")
+            for segment in result.segments:
+                print(f"Спикер: {segment.speaker}, Текст: {segment.text}, Начало: {segment.start}, Конец: {segment.end}")
+
         except Exception as e:
             print(f"Ошибка при обработке файла в predict: {str(e)}")
             raise
-
-        # Формирование ответа
-        response = TranscriptionResponse(
-            segments=[
-                SpeakerSegment(
-                    text=segment.text,
-                    start=segment.start,
-                    end=segment.end,
-                    speaker=segment.speaker,
-                    words=segment.words
-                ) for segment in result.segments
-            ],
-            num_speakers=result.num_speakers,
-            language=result.language
-        )
 
         return response
 
