@@ -149,7 +149,7 @@ class Predictor:
             if translate:
                 command.append("--translate")
 
-            output_json = f"{tempfile.mktemp()}.json"
+            output_json = f"{tempfile.mktemp()}"
             command.extend(["-of", output_json])
 
             try:
@@ -160,14 +160,6 @@ class Predictor:
                     text=True
                 )
                 
-                while True:
-                    output = process.stdout.readline()
-                    if output:
-                        print(f"Whisper output: {output.strip()}")
-                    
-                    if process.poll() is not None:
-                        break
-
                 if process.returncode != 0:
                     _, remaining_error = process.communicate()
                     error_message = f"Whisper process failed with code {process.returncode}: {remaining_error}"
