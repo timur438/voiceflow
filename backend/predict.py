@@ -149,7 +149,7 @@ class Predictor:
             if translate:
                 command.append("--translate")
 
-            output_json = {tempfile.mktemp()}
+            output_json = tempfile.mktemp()
             command.extend(["-of", output_json])
 
             try:
