@@ -165,9 +165,6 @@ class Predictor:
                     output = process.stdout.readline()
                     if output:
                         print(f"Whisper output: {output.strip()}")
-                    error = process.stderr.readline()
-                    if error:
-                        print(f"Whisper error: {error.strip()}")
                     
                     if process.poll() is not None:
                         break
