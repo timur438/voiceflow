@@ -18,7 +18,6 @@ app.add_middleware(
 )
 
 predictor = Predictor()
-predictor.setup()
 
 class SpeakerSegment(BaseModel):
     text: str
