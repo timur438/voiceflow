@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
 import base64
+import asyncio
 from predict import Predictor, TranscriptionResult
 
 app = FastAPI()
@@ -62,7 +63,8 @@ async def transcribe(file: UploadFile = File(...), background_tasks: BackgroundT
         file_size = 0
         file_content = bytearray()
         
-        while chunk := await file.read(1024 * 1024):
+        # Асинхронно читаем файл
+        async for chunk in file.iter_bytes(1024 * 1024):
             file_size += len(chunk)
             if file_size > MAX_FILE_SIZE:
                 raise HTTPException(status_code=413, detail="File size too large. Maximum size is 1000MB")
@@ -72,6 +74,7 @@ async def transcribe(file: UploadFile = File(...), background_tasks: BackgroundT
 
         response = JSONResponse(status_code=202, content={"message": "File accepted for processing"})
         
+        # Асинхронно обрабатываем транскрипцию в фоне
         background_tasks.add_task(process_transcription, bytes(file_content))
 
         return response
