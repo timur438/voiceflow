@@ -153,16 +153,11 @@ class Predictor:
             command.extend(["-of", output_json])
 
             try:
-                process = subprocess.Popen(
-                    command,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                    text=True
-                )
-                
+                process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+                stdout, stderr = process.communicate()
+
                 if process.returncode != 0:
-                    _, remaining_error = process.communicate()
-                    error_message = f"Whisper process failed with code {process.returncode}: {remaining_error}"
+                    error_message = f"Whisper process failed with code {process.returncode}: {stderr}"
                     print(error_message)
                     raise Exception(error_message)
 
