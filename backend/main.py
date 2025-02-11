@@ -90,6 +90,7 @@ async def transcribe(file: UploadFile = File(...), background_tasks: BackgroundT
 
 if __name__ == "__main__":
     import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
+    
     loop = asyncio.get_event_loop()
     loop.run_until_complete(setup_predictor())
-    uvicorn.run(app, host="0.0.0.0", port=8000)
