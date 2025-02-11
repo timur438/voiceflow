@@ -79,7 +79,6 @@ async def transcribe(file: UploadFile = File(...), background_tasks: BackgroundT
     except Exception as e:
         import traceback
         error_details = f"Ошибка обработки файла: {str(e)}\n{traceback.format_exc()}"
-        print(error_details)
         raise HTTPException(status_code=500, detail=error_details)
 
 if __name__ == "__main__":

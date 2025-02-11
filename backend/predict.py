@@ -183,7 +183,7 @@ class Predictor:
             transcript_output_format: str = "both",
             num_speakers: int = None,
             translate: bool = False,
-            language: str = None,
+            language: str = "ru",
             prompt: str = None,
             summary_type: str = "summary",
             offset_seconds: int = 0,
@@ -262,7 +262,7 @@ class Predictor:
 
             finally:
                 # Очистка временных файлов
-                if temp_input and os.path.exists(temp_input):
-                    os.remove(temp_input)
+                #if temp_input and os.path.exists(temp_input):
+                #    os.remove(temp_input)
                 if wav_file and os.path.exists(wav_file):
                     os.remove(wav_file)
