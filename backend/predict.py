@@ -129,9 +129,6 @@ class Predictor:
 
     def _process_audio(self, wav_file: str, language: str = "ru", translate: bool = False) -> dict:
         try:
-            output = {tempfile.mktemp()}
-            output_json = f"{output}.json"
-
             if not os.path.exists(self.model_path):
                 raise FileNotFoundError(f"Model file not found: {self.model_path}")
             
@@ -152,7 +149,8 @@ class Predictor:
             if translate:
                 command.append("--translate")
 
-            command.append(["-of", output])
+            output_json = {tempfile.mktemp()}
+            command.extend(["-of", output_json])
 
             try:
                 process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
