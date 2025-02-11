@@ -149,8 +149,8 @@ class Predictor:
             if translate:
                 command.append("--translate")
 
-            output_json = tempfile.mktemp()
-            command.extend(["-of", output_json])
+            output_json = tempfile.mktemp(suffix=".json")  
+            command.extend(["-of", output_json[:-5]])
 
             try:
                 process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
