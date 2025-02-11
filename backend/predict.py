@@ -152,7 +152,7 @@ class Predictor:
             if translate:
                 command.append("--translate")
 
-            command.extend(["-of", output])
+            command.append(["-of", output])
 
             try:
                 process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
