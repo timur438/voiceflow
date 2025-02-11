@@ -136,13 +136,12 @@ class Predictor:
                 raise FileNotFoundError(f"WAV file not found: {wav_file}")
 
             command = [
-                "./whisper.cpp/build/bin/whisper-cli",
+                "./whisper.cpp/build-cuda/bin/whisper-cli",
                 "-m", self.model_path,
                 "-f", wav_file,
                 "--output-json",
                 "--print-progress",
-                "--max-len", "1",
-                "--threads", "4"
+                "--max-len", "1"
             ]
 
             if language:
