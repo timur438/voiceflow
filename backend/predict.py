@@ -161,11 +161,22 @@ class Predictor:
                     text=True
                 )
                 
-                process.wait()
+                while True:
+                    output = process.stdout.readline()
+                    if output:
+                        print(f"Whisper output: {output.strip()}")
+                    error = process.stderr.readline()
+                    if error:
+                        print(f"Whisper error: {error.strip()}")
+                    
+                    if process.poll() is not None:
+                        break
 
                 if process.returncode != 0:
-                    _, error = process.communicate()
-                    raise Exception(f"Whisper process failed with code {process.returncode}: {error}")
+                    _, remaining_error = process.communicate()
+                    error_message = f"Whisper process failed with code {process.returncode}: {remaining_error}"
+                    print(error_message)
+                    raise Exception(error_message)
 
                 with open(output_json, 'r') as f:
                     return json.load(f)
@@ -176,7 +187,6 @@ class Predictor:
 
         except Exception as e:
             raise Exception(f"Error processing audio: {str(e)}")
-
 
     async def predict(
             self,
