@@ -4,7 +4,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
 import base64
-import asyncio
 from predict import Predictor, TranscriptionResult
 
 app = FastAPI()
@@ -18,6 +17,7 @@ app.add_middleware(
 )
 
 predictor = Predictor()
+predictor.setup()
 
 class SpeakerSegment(BaseModel):
     text: str
@@ -30,11 +30,6 @@ class TranscriptionResponse(BaseModel):
     segments: List[SpeakerSegment]
     num_speakers: int
     language: str
-
-async def setup_predictor():
-    predictor.setup()
-    if not predictor.transcription_queue.worker.done():
-        await predictor.transcription_queue.worker
 
 async def process_transcription(file_content: bytes):
     try:
@@ -67,8 +62,7 @@ async def transcribe(file: UploadFile = File(...), background_tasks: BackgroundT
         file_size = 0
         file_content = bytearray()
         
-        # Асинхронно читаем файл
-        async for chunk in file.iter_bytes(1024 * 1024):
+        while chunk := await file.read(1024 * 1024):
             file_size += len(chunk)
             if file_size > MAX_FILE_SIZE:
                 raise HTTPException(status_code=413, detail="File size too large. Maximum size is 1000MB")
@@ -78,7 +72,6 @@ async def transcribe(file: UploadFile = File(...), background_tasks: BackgroundT
 
         response = JSONResponse(status_code=202, content={"message": "File accepted for processing"})
         
-        # Асинхронно обрабатываем транскрипцию в фоне
         background_tasks.add_task(process_transcription, bytes(file_content))
 
         return response
@@ -91,6 +84,3 @@ async def transcribe(file: UploadFile = File(...), background_tasks: BackgroundT
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
-    
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(setup_predictor())

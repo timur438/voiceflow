@@ -11,7 +11,7 @@ import torch
 import torchaudio
 from pyannote.audio import Pipeline
 from queue import Queue
-from threading import Lock
+from threading import Thread, Lock
 import time
 from dotenv import load_dotenv
 
@@ -32,28 +32,29 @@ class TranscriptionResult(BaseModel):
     translation: Optional[str] = None
 
 class TranscriptionQueue:
-    def __init__(self, max_concurrent=3):
+    def __init__(self, max_concurrent=2):
         self.queue = Queue()
         self.max_concurrent = max_concurrent
         self.current_tasks = 0
         self.lock = Lock()
-        self.worker = asyncio.create_task(self._process_queue())
-    
-    async def add_task(self, task):
+        self.worker = Thread(target=self._process_queue, daemon=True)
+        self.worker.start()
+
+    def add_task(self, task):
         return self.queue.put(task)
 
-    async def _process_queue(self):
+    def _process_queue(self):
         while True:
-            task = await self.queue.get()
-            async with self.lock:
+            task = self.queue.get()
+            with self.lock:
                 while self.current_tasks >= self.max_concurrent:
-                    await asyncio.sleep(1)
+                    time.sleep(1)
                 self.current_tasks += 1
             
             try:
-                await task()
+                task()
             finally:
-                async with self.lock:
+                with self.lock:
                     self.current_tasks -= 1
                 self.queue.task_done()
 
@@ -96,7 +97,7 @@ class Predictor:
         except subprocess.CalledProcessError as e:
             raise RuntimeError(f"FFmpeg error: {e.stderr.decode()}")
 
-    async def _get_speaker_segments(self, audio_path, num_speakers=None):
+    def _get_speaker_segments(self, audio_path, num_speakers=None):
         """Получение сегментов с информацией о спикерах"""
         try:
             waveform, sample_rate = torchaudio.load(audio_path)
@@ -126,7 +127,7 @@ class Predictor:
         except Exception as e:
             raise RuntimeError(f"Diarization error: {str(e)}")
 
-    async def _process_audio(self, wav_file: str, language: str = "ru", translate: bool = False) -> dict:
+    def _process_audio(self, wav_file: str, language: str = "ru", translate: bool = False) -> dict:
         try:
             if not os.path.exists(self.model_path):
                 raise FileNotFoundError(f"Model file not found: {self.model_path}")
@@ -151,20 +152,27 @@ class Predictor:
             output_json = f"{tempfile.mktemp()}"
             command.extend(["-of", output_json])
 
-            process = await asyncio.create_subprocess_exec(
-                *command,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE,
-                text=True
-            )
-            
-            # Waiting for process to complete
-            stdout, stderr = await process.communicate()
-            if process.returncode != 0:
-                raise RuntimeError(f"Whisper process failed with code {process.returncode}: {stderr}")
-            
-            with open(output_json, 'r') as f:
-                return json.load(f)
+            try:
+                process = subprocess.Popen(
+                    command,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True
+                )
+                
+                if process.returncode != 0:
+                    _, remaining_error = process.communicate()
+                    error_message = f"Whisper process failed with code {process.returncode}: {remaining_error}"
+                    print(error_message)
+                    raise Exception(error_message)
+
+                with open(output_json, 'r') as f:
+                    return json.load(f)
+
+            finally:
+                if os.path.exists(output_json):
+                    os.remove(output_json)
+
         except Exception as e:
             raise Exception(f"Error processing audio: {str(e)}")
 
@@ -191,15 +199,15 @@ class Predictor:
                 wav_file = self._convert_to_wav(temp_input)
 
                 future_result = {}
-
-                async def process_task():
+                
+                def process_task():
                     try:
-                        speaker_segments, detected_speakers = await self._get_speaker_segments(
+                        speaker_segments, detected_speakers = self._get_speaker_segments(
                             wav_file, 
                             num_speakers
                         )
 
-                        result = await self._process_audio(wav_file, language, translate)
+                        result = self._process_audio(wav_file, language, translate)
 
                         segments = []
                         full_text = []
@@ -232,7 +240,7 @@ class Predictor:
                             translation=None
                         )
                         
-                        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+                        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
                         output_filename = f"transcription_result_{timestamp}.json"
                         with open(output_filename, "w") as f:
                             json.dump(transcription_result.dict(), f, indent=4, ensure_ascii=False)
@@ -242,7 +250,7 @@ class Predictor:
                     except Exception as e:
                         future_result['error'] = e
 
-                await self.transcription_queue.add_task(process_task)
+                self.transcription_queue.add_task(process_task)
                 
                 while 'result' not in future_result and 'error' not in future_result:
                     await asyncio.sleep(0.1)
@@ -254,7 +262,7 @@ class Predictor:
 
             finally:
                 # Очистка временных файлов
-                if temp_input and os.path.exists(temp_input):
-                    os.remove(temp_input)
+                #if temp_input and os.path.exists(temp_input):
+                #    os.remove(temp_input)
                 if wav_file and os.path.exists(wav_file):
                     os.remove(wav_file)
