@@ -18,7 +18,11 @@ app.add_middleware(
 )
 
 predictor = Predictor()
-predictor.setup()
+
+@app.on_event("startup")
+async def startup_event():
+    # Инициализация на старте
+    await predictor.setup()
 
 class SpeakerSegment(BaseModel):
     text: str
