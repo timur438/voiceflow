@@ -145,7 +145,6 @@ class Predictor:
         try:
             process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
             stdout, stderr = process.communicate()
-            logging.info(f"Whisper output: {stdout}")
             if process.returncode != 0:
                 logging.error(f"Whisper error: {stderr}")
                 raise Exception(f"Whisper process failed: {stderr}")
