@@ -105,6 +105,11 @@ class Predictor:
         except subprocess.CalledProcessError as e:
             logging.error(f"FFmpeg error: {e.stderr.decode()}")
             raise RuntimeError(f"FFmpeg error: {e.stderr.decode()}")
+        finally:
+            if os.path.exists(input_file):
+                os.remove(input_file)
+                logging.info(f"Removed input file: {input_file}")
+
 
     def _get_speaker_segments(self, audio_path, num_speakers=None):
         logging.info(f"Running speaker diarization on {audio_path}")
@@ -187,6 +192,10 @@ class Predictor:
         current = None
         
         for seg in segments:
+            # Пропускаем пустые сегменты
+            if not seg["text"] or seg["text"].isspace():
+                continue
+
             if not current:
                 current = {
                     "text": seg["text"],
@@ -201,11 +210,19 @@ class Predictor:
             if (seg["speaker"] == current["speaker"] and 
                 (seg["start"] - current["end"]) < 1.0):
                 
-                # Убираем пробел в начале, если это часть слова
-                if current["text"][-1].isalpha() and seg["text"][0].isalpha():
-                    current["text"] += seg["text"]
+                # Проверяем, что текущий текст не пустой
+                if current["text"] and seg["text"]:
+                    # Убираем пробел в начале, если это часть слова
+                    if (len(current["text"]) > 0 and 
+                        len(seg["text"]) > 0 and 
+                        current["text"][-1].isalpha() and 
+                        seg["text"][0].isalpha()):
+                        current["text"] += seg["text"]
+                    else:
+                        current["text"] += " " + seg["text"].lstrip()
                 else:
-                    current["text"] += " " + seg["text"].lstrip()
+                    # Если один из текстов пустой, просто используем непустой
+                    current["text"] = current["text"] or seg["text"]
                 
                 current["end"] = seg["end"]
                 if seg.get("words"):
@@ -223,7 +240,8 @@ class Predictor:
                     "words": seg.get("words", [])
                 }
 
-        if current and current["text"].strip() and not current["text"].isspace():
+        # Добавляем последний сегмент, если он существует и не пустой
+        if current and current["text"] and current["text"].strip() and not current["text"].isspace():
             merged.append(current)
 
         return merged
