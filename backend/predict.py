@@ -150,28 +150,42 @@ class Predictor:
                 logging.error(f"Whisper error: {stderr}")
                 raise Exception(f"Whisper process failed: {stderr}")
             
-            if not os.path.exists(output_json):
-                logging.error(f"Output JSON file not found: {output_json}")
-                raise Exception("Output JSON file not found")
-                
             with open(output_json, 'r') as f:
                 result = json.load(f)
                 
             logging.info(f"Whisper result: {result}")
             
-            # Проверяем структуру результата и преобразуем если необходимо
-            if "segments" not in result:
-                # Если формат другой, преобразуем его в нужную структуру
-                if isinstance(result, list):
-                    return {"segments": result}
-                else:
-                    logging.error(f"Unexpected result format: {result}")
-                    raise Exception("Unexpected result format")
+            # Преобразуем формат вывода в нужную структуру
+            if "transcription" in result:
+                segments = []
+                for trans in result["transcription"]:
+                    # Преобразуем временные метки из формата "HH:MM:SS,mmm" в секунды
+                    start = sum(float(x) * y for x, y in zip(
+                        trans["offsets"]["from"] / 1000.0
+                    ))
+                    end = sum(float(x) * y for x, y in zip(
+                        trans["offsets"]["to"] / 1000.0
+                    ))
                     
-            return result
+                    segments.append({
+                        "text": trans["text"].strip(),
+                        "start": start,
+                        "end": end,
+                        "words": []  # если нужно, можно добавить обработку слов
+                    })
+                
+                return {
+                    "segments": segments,
+                    "language": result.get("result", {}).get("language", "auto")
+                }
+            else:
+                logging.error(f"Unexpected result format: {result}")
+                raise Exception("Unexpected result format")
+                
         finally:
             if os.path.exists(output_json):
                 os.remove(output_json)
+
 
     async def predict(self, file_string: str, num_speakers: int = None, translate: bool = False, language: str = "ru") -> TranscriptionResult:
         temp_input = tempfile.mktemp()
