@@ -139,7 +139,7 @@ class Predictor:
         command = [
             "./whisper.cpp/build-cuda/bin/whisper-cli",
             "-m", self.model_path, "-f", wav_file,
-            "--output-json", "--print-progress", "--max-len", "1"
+            "--output-json", "--print-progress"
         ]
         if language:
             command.extend(["--language", language])
