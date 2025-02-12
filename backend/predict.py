@@ -149,8 +149,26 @@ class Predictor:
             if process.returncode != 0:
                 logging.error(f"Whisper error: {stderr}")
                 raise Exception(f"Whisper process failed: {stderr}")
+            
+            if not os.path.exists(output_json):
+                logging.error(f"Output JSON file not found: {output_json}")
+                raise Exception("Output JSON file not found")
+                
             with open(output_json, 'r') as f:
-                return json.load(f)
+                result = json.load(f)
+                
+            logging.info(f"Whisper result: {result}")
+            
+            # Проверяем структуру результата и преобразуем если необходимо
+            if "segments" not in result:
+                # Если формат другой, преобразуем его в нужную структуру
+                if isinstance(result, list):
+                    return {"segments": result}
+                else:
+                    logging.error(f"Unexpected result format: {result}")
+                    raise Exception("Unexpected result format")
+                    
+            return result
         finally:
             if os.path.exists(output_json):
                 os.remove(output_json)
@@ -188,7 +206,7 @@ class Predictor:
                     logging.info(f"Saved transcription: {output_filename}")
                     future_result['result'] = transcription_result
                 except Exception as e:
-                    logging.error(f"Prediction error: {str(e)}")
+                    logging.error(f"Prediction error: {e}")
                     future_result['error'] = e
             self.transcription_queue.add_task(process_task)
             while 'result' not in future_result and 'error' not in future_result:
