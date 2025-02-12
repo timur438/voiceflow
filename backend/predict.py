@@ -210,7 +210,7 @@ class Predictor:
                         segments=segments, language=result.get("language", "auto"),
                         num_speakers=detected_speakers, text=" ".join([s.text for s in segments]), translation=None
                     )
-                    output_filename = f"transcription_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+                    output_filename = f"transcription_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
                     with open(output_filename, "w") as f:
                         json.dump(transcription_result.dict(), f, indent=4, ensure_ascii=False)
                     logging.info(f"Saved transcription: {output_filename}")
