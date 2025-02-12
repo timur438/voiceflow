@@ -38,8 +38,6 @@ async def process_transcription(file_content: bytes):
         
         result: TranscriptionResult = await predictor.predict(
             file_string=file_string,
-            group_segments=True,
-            transcript_output_format="both",
             num_speakers=None,
             translate=False,
             language=None,
