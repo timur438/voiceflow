@@ -181,8 +181,54 @@ class Predictor:
             if os.path.exists(output_json):
                 os.remove(output_json)
 
+    def _merge_segments(self, segments):
+        """Объединяет сегменты в осмысленные группы по спикерам"""
+        merged = []
+        current = None
+        
+        for seg in segments:
+            if not current:
+                current = {
+                    "text": seg["text"],
+                    "start": seg["start"],
+                    "end": seg["end"],
+                    "speaker": seg["speaker"],
+                    "words": seg.get("words", [])
+                }
+                continue
 
-    async def predict(self, file_string: str, num_speakers: int = None, translate: bool = False, language: str = "ru") -> TranscriptionResult:
+            # Если тот же спикер и промежуток между сегментами меньше 1 секунды
+            if (seg["speaker"] == current["speaker"] and 
+                (seg["start"] - current["end"]) < 1.0):
+                
+                # Убираем пробел в начале, если это часть слова
+                if current["text"][-1].isalpha() and seg["text"][0].isalpha():
+                    current["text"] += seg["text"]
+                else:
+                    current["text"] += " " + seg["text"].lstrip()
+                
+                current["end"] = seg["end"]
+                if seg.get("words"):
+                    current["words"].extend(seg["words"])
+            else:
+                # Очищаем текст от лишних пробелов и знаков препинания
+                current["text"] = current["text"].strip()
+                if current["text"] and not current["text"].isspace():
+                    merged.append(current)
+                current = {
+                    "text": seg["text"],
+                    "start": seg["start"],
+                    "end": seg["end"],
+                    "speaker": seg["speaker"],
+                    "words": seg.get("words", [])
+                }
+
+        if current and current["text"].strip() and not current["text"].isspace():
+            merged.append(current)
+
+        return merged
+
+    async def predict(self, file_string: str, num_speakers: int = None, translate: bool = False, language: str = "ru", group_segments: bool = False) -> TranscriptionResult:
         temp_input = tempfile.mktemp()
         wav_file = None
         try:
@@ -195,28 +241,42 @@ class Predictor:
                 try:
                     speaker_segments, detected_speakers = self._get_speaker_segments(wav_file, num_speakers)
                     result = self._process_audio(wav_file, language, translate)
-                    segments = [
-                        TranscriptionSegment(
-                            text=seg["text"].strip(),
-                            start=seg["start"],
-                            end=seg["end"],
-                            speaker=next((s["speaker"] for s in speaker_segments if s["start"] <= (seg["start"] + seg["end"]) / 2 <= s["end"]), "UNKNOWN"),
-                            words=seg.get("words", [])
-                        )
+                    
+                    # Создаем предварительные сегменты
+                    raw_segments = [
+                        {
+                            "text": seg["text"].strip(),
+                            "start": seg["start"],
+                            "end": seg["end"],
+                            "speaker": next((s["speaker"] for s in speaker_segments if s["start"] <= (seg["start"] + seg["end"]) / 2 <= s["end"]), "UNKNOWN"),
+                            "words": seg.get("words", [])
+                        }
                         for seg in result["segments"]
                     ]
+                    
+                    # Объединяем сегменты
+                    merged_segments = self._merge_segments(raw_segments)
+                    
+                    # Создаем финальные TranscriptionSegment объекты
+                    segments = [TranscriptionSegment(**seg) for seg in merged_segments]
+                    
                     transcription_result = TranscriptionResult(
-                        segments=segments, language=result.get("language", "auto"),
-                        num_speakers=detected_speakers, text=" ".join([s.text for s in segments]), translation=None
+                        segments=segments,
+                        language=result.get("language", "auto"),
+                        num_speakers=detected_speakers,
+                        text=" ".join([s.text for s in segments]),
+                        translation=None
                     )
+                    
                     output_filename = f"transcription_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
                     with open(output_filename, "w") as f:
                         json.dump(transcription_result.dict(), f, indent=4, ensure_ascii=False)
                     logging.info(f"Saved transcription: {output_filename}")
                     future_result['result'] = transcription_result
                 except Exception as e:
-                    logging.error(f"Prediction error: {e}")
+                    logging.error(f"Prediction error: {str(e)}")
                     future_result['error'] = e
+            
             self.transcription_queue.add_task(process_task)
             while 'result' not in future_result and 'error' not in future_result:
                 await asyncio.sleep(0.1)
