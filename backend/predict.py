@@ -155,7 +155,7 @@ class Predictor:
             if os.path.exists(output_json):
                 os.remove(output_json)
 
-    async def predict(self, file_string: str, num_speakers: int = None, translate: bool = False, language: str = "ru") -> TranscriptionResult:
+    async def predict(self, file_string: str, num_speakers: int = None, translate: bool = False, language: str = "ru", group_segments: bool = False) -> TranscriptionResult:
         temp_input = tempfile.mktemp()
         wav_file = None
         try:
