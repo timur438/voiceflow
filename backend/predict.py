@@ -159,13 +159,9 @@ class Predictor:
             if "transcription" in result:
                 segments = []
                 for trans in result["transcription"]:
-                    # Преобразуем временные метки из формата "HH:MM:SS,mmm" в секунды
-                    start = sum(float(x) * y for x, y in zip(
-                        trans["offsets"]["from"] / 1000.0
-                    ))
-                    end = sum(float(x) * y for x, y in zip(
-                        trans["offsets"]["to"] / 1000.0
-                    ))
+                    # Преобразуем миллисекунды в секунды
+                    start = trans["offsets"]["from"] / 1000.0
+                    end = trans["offsets"]["to"] / 1000.0
                     
                     segments.append({
                         "text": trans["text"].strip(),
