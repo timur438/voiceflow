@@ -36,6 +36,7 @@ class Email(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String(255), unique=True, index=True)
+    token = Column(String(255), nullable=True)
     account_id = Column(Integer, ForeignKey('accounts.id'))
     account = relationship("Account", back_populates="emails")
 
