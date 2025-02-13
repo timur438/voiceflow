@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, LargeBinary
+from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, LargeBinary, Text
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
@@ -43,7 +43,7 @@ class Transcript(Base):
     __tablename__ = 'transcripts'
 
     id = Column(Integer, primary_key=True, index=True)
-    encrypted_data = Column(String(10000000))
+    encrypted_data = Column(Text)
     account_id = Column(Integer, ForeignKey('accounts.id'))
     account = relationship("Account", back_populates="transcripts")
 
