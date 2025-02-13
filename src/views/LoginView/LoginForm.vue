@@ -58,11 +58,4 @@ export default defineComponent({
 });
 </script>
 
-<style scoped>
-.error-message {
-  color: red;
-  margin-top: 10px;
-}
-</style>
-
 <style scoped src="@/assets/scss/LoginView.scss"></style>

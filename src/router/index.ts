@@ -74,7 +74,7 @@ router.beforeEach(async (to, from, next) => {
   if (to.matched.some(record => record.meta.requiresAuth)) {
     const authenticated = await isAuthenticated();
     if (!authenticated) {
-      next({ name: 'LoginForm' });
+      next({ name: 'EmailInput' });
     } else {
       next();
     }
