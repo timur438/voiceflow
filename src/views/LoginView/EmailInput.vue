@@ -54,15 +54,4 @@ export default defineComponent({
 });
 </script>
 
-<style scoped>
-.form-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-}
-
-.message {
-  color: green;
-}
-</style>
+<style scoped src="@/assets/scss/LoginView.scss"></style>
