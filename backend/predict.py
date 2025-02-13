@@ -40,6 +40,7 @@ class TranscriptionResult(BaseModel):
     num_speakers: int
     text: str
     translation: Optional[str] = None
+    summary: Optional[str] = None
 
 class TranscriptionQueue:
     def __init__(self, max_concurrent=2):
@@ -70,6 +71,19 @@ class TranscriptionQueue:
 
 class Predictor:
     def setup(self):
+        logging.info("Loading summarization model...")
+        self.llama_path = "./llama.cpp/main"
+        self.llama_model_path = "./llama.cpp/models/llama-2-7b-chat.gguf"
+
+        # Проверяем наличие модели llama
+        if not os.path.exists(self.llama_model_path):
+            raise RuntimeError("Llama model not found. Please download it first.")
+        
+        self.PROMPTS = {
+            "summary": "Создай краткое содержание этого разговора в 2-3 предложениях:",
+            "hr_interview": "Проанализируй это интервью и выдели основные компетенции кандидата, его сильные и слабые стороны:"
+        }
+
         logging.info("Setting up Predictor...")
         self.model_path = "./whisper.cpp/models/ggml-large-v3-turbo.bin"
         if not os.path.exists(self.model_path):
@@ -245,8 +259,55 @@ class Predictor:
             merged.append(current)
 
         return merged
+    
+    def _generate_summary(self, text: str, prompt_type: str = "summary") -> str:
+        """Generate summary using llama.cpp"""
+        logging.info(f"Generating {prompt_type}...")
+        
+        if prompt_type not in self.PROMPTS:
+            raise ValueError(f"Invalid prompt type. Must be one of: {list(self.PROMPTS.keys())}")
+        
+        try:
+            prompt = f"{self.PROMPTS[prompt_type]}\n\nТекст: {text}\n\nОтвет:"
+            
+            command = [
+                self.llama_path,
+                "-m", self.llama_model_path,
+                "-propmt", prompt,
+                "-n", "512",  # максимальное количество токенов
+                "--temp", "0.7",
+                "--repeat_penalty", "1.1",
+                "-t", "8",  # количество потоков
+                "--top_p", "0.9",
+                "-c", "2048"  # размер контекста
+            ]
 
-    async def predict(self, file_string: str, num_speakers: int = None, translate: bool = False, language: str = "ru", group_segments: bool = False) -> TranscriptionResult:
+            try:
+                result = subprocess.run(
+                    command,
+                    capture_output=True,
+                    text=True,
+                    check=True
+                )
+                
+                # Извлекаем сгенерированный текст
+                output = result.stdout
+                summary = output.split("Ответ:")[1].strip()
+                
+                logging.info(f"Generated {prompt_type}: {summary}")
+                return summary
+
+            except subprocess.CalledProcessError as e:
+                logging.error(f"Llama.cpp error: {e.stderr}")
+                raise RuntimeError(f"Llama.cpp error: {e.stderr}")
+                
+        except Exception as e:
+            logging.error(f"Summary generation error: {str(e)}")
+            raise RuntimeError(f"Summary generation error: {str(e)}")
+
+    async def predict(self, file_string: str, num_speakers: int = None, translate: bool = False, 
+                 language: str = "ru", group_segments: bool = False, 
+                 prompt_type: str = "summary") -> TranscriptionResult:
         temp_input = tempfile.mktemp()
         wav_file = None
         try:
@@ -277,13 +338,17 @@ class Predictor:
                     
                     # Создаем финальные TranscriptionSegment объекты
                     segments = [TranscriptionSegment(**seg) for seg in merged_segments]
-                    
+
+                    full_text = " ".join([s.text for s in segments])
+                    summary = self._generate_summary(full_text, prompt_type)
+
                     transcription_result = TranscriptionResult(
                         segments=segments,
                         language=result.get("language", "auto"),
                         num_speakers=detected_speakers,
-                        text=" ".join([s.text for s in segments]),
-                        translation=None
+                        text=full_text,
+                        translation=None,
+                        summary=summary
                     )
                     
                     output_filename = os.path.join("temp_files", f"transcription_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.json")

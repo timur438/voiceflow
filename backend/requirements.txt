@@ -13,3 +13,10 @@ python-multipart
 pydub
 python-magic
 numpy
+sqlalchemy
+databases 
+passlib 
+cryptography
+pycryptodome
+bcrypt
+PyMySQL

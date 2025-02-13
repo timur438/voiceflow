@@ -1,12 +1,28 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException, BackgroundTasks
-from fastapi.responses import JSONResponse
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-from typing import List, Optional
 import base64
+import bcrypt
+import os
+import uuid
+
+from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI, HTTPException, BackgroundTasks, UploadFile, File, Depends
+
+from typing import List, Optional
 from predict import Predictor, TranscriptionResult
+from pydantic import BaseModel, EmailStr
+from sqlalchemy.orm import Session
+from dotenv import load_dotenv
+
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+
+from database import SessionLocal, Account, Email, Transcript 
+from utils import generate_encrypted_key, decrypt_key 
 
 app = FastAPI()
+
+load_dotenv()
 
 app.add_middleware(
     CORSMiddleware,
@@ -19,6 +35,43 @@ app.add_middleware(
 predictor = Predictor()
 predictor.setup()
 
+def send_email(to_email: str, link: str):
+    try:
+        sender_email = "3735@voiceflow.ru" 
+        sender_password = os.getenv("SENDER_PASSWORD")
+        smtp_server = "smtp.mail.selcloud.ru" 
+        smtp_port = 1127
+
+        subject = "Завершение регистрации"
+        body = f"Пройдите по ссылке для завершения регистрации: {link}"
+        
+        # Создаем MIME сообщение
+        msg = MIMEMultipart()
+        msg['From'] = sender_email
+        msg['To'] = to_email
+        msg['Subject'] = subject
+        msg.attach(MIMEText(body, 'plain'))
+
+        with smtplib.SMTP_SSL(smtp_server, smtp_port) as server:
+            server.login(sender_email, sender_password) 
+            server.sendmail(sender_email, to_email, msg.as_string())
+            print(f"Email sent to {to_email}")
+    
+    except Exception as e:
+        print(f"Error sending email: {e}")
+
+# Модели
+class RegisterRequest(BaseModel):
+    email: EmailStr
+    password: str
+
+class LoginRequest(BaseModel):
+    email: EmailStr
+    password: str
+
+class CheckEmailRequest(BaseModel):
+    email: EmailStr
+
 class SpeakerSegment(BaseModel):
     text: str
     start: float
@@ -30,6 +83,14 @@ class TranscriptionResponse(BaseModel):
     segments: List[SpeakerSegment]
     num_speakers: int
     language: str
+
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
 async def process_transcription(file_content: bytes):
     try:
@@ -45,8 +106,66 @@ async def process_transcription(file_content: bytes):
     except Exception as e:
         print(f"Ошибка обработки: {str(e)}")
 
+@app.post("/check")
+async def check_email(request: CheckEmailRequest, db: Session = Depends(get_db)):
+    email = db.query(Email).filter(Email.email == request.email).first()
+    if email:
+        # Если email уже зарегистрирован, перенаправляем на страницу логина
+        return RedirectResponse(url="/login?email=" + request.email)
+    
+    unique_token = str(uuid.uuid4()) 
+    registration_link = f"https://voiceflow.ru/register?token={unique_token}"
+
+    email_record = Email(email=request.email, token=unique_token)
+    db.add(email_record)
+    db.commit()
+    
+    send_email(request.email, registration_link)
+
+    return {"message": "Check your email to complete registration"}
+
+@app.post("/register")
+async def register(token: str, request: RegisterRequest, db: Session = Depends(get_db)):
+    email_record = db.query(Email).filter(Email.token == token).first()
+    if not email_record:
+        raise HTTPException(status_code=400, detail="Invalid or expired token")
+    
+    existing_email = db.query(Email).filter(Email.email == request.email).first()
+    if existing_email:
+        raise HTTPException(status_code=400, detail="Email already exists")
+    
+    new_account = Account(username=request.email)
+    db.add(new_account)
+    db.commit()
+    db.refresh(new_account)
+
+    encrypted_key = generate_encrypted_key(request.password)
+    new_account.key = base64.b64encode(encrypted_key).decode('utf-8')
+
+    # Удаляем токен после использования
+    email_record.token = None
+    db.commit()
+
+    return {"message": "Registration successful"}
+
+@app.post("/login")
+async def login(request: LoginRequest, db: Session = Depends(get_db)):
+    email_record = db.query(Email).filter(Email.email == request.email).first()
+    if not email_record:
+        raise HTTPException(status_code=404, detail="Email not found")
+
+    # Проверка пароля с использованием bcrypt
+    stored_encrypted_key = email_record.account.key
+    encrypted_data = base64.b64decode(stored_encrypted_key)
+    
+    # Расшифровка ключа с использованием функции из utils
+    decrypted_key = decrypt_key(request.password, encrypted_data)
+    
+    return {"message": "Login successful", "decrypted_key": decrypted_key.hex()}
+
 @app.post("/transcribe")
-async def transcribe(file: UploadFile = File(...), background_tasks: BackgroundTasks = BackgroundTasks()):
+async def transcribe(file: UploadFile = File(...), background_tasks: BackgroundTasks = BackgroundTasks(), decrypted_key: str = Depends(login), db: Session = Depends(get_db)):
+
     try:
         MAX_FILE_SIZE = 1000 * 1024 * 1024
         file_size = 0
