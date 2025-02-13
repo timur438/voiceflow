@@ -75,7 +75,7 @@ def send_email(to_email: str, link: str):
         sender_email = "3735@voiceflow.ru" 
         sender_password = os.getenv("SENDER_PASSWORD")
         smtp_server = "smtp.mail.selcloud.ru" 
-        smtp_port = 1127
+        smtp_port = 1126
 
         subject = "Завершение регистрации"
         body = f"Пройдите по ссылке для завершения регистрации: {link}"
