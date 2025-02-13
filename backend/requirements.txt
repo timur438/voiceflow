@@ -3,11 +3,9 @@ uvicorn
 torch
 requests
 pyannote.audio
-faster-whisper
 torchvision
 torchtext
 llama-cpp-python
-cog
 python-dotenv
 python-multipart
 pydub
@@ -19,4 +17,5 @@ passlib
 cryptography
 pycryptodome
 bcrypt
-PyMySQL
+jwt
+jose

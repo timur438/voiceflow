@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, Column, Integer, String, ForeignKey
+from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, LargeBinary
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
@@ -21,14 +21,15 @@ Base = declarative_base()
 engine = create_engine(DATABASE_URL, pool_recycle=3600)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-# Модели
 class Account(Base):
     __tablename__ = 'accounts'
 
     id = Column(Integer, primary_key=True, index=True)
-    username = Column(String, unique=True, index=True)
-    hashed_password = Column(String)
-    emails = relationship("Email", back_populates="owner")
+    email = Column(String, unique=True, index=True) 
+    password_hash = Column(String) 
+    encrypted_key = Column(LargeBinary)
+
+    emails = relationship("Email", back_populates="account", uselist=False)
     transcripts = relationship("Transcript", back_populates="account")
 
 class Email(Base):

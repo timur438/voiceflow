@@ -2,11 +2,15 @@ import base64
 import bcrypt
 import os
 import uuid
+import jwt
+from datetime import datetime, timedelta
 
 from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi import FastAPI, HTTPException, BackgroundTasks, UploadFile, File, Depends
+from fastapi import FastAPI, HTTPException, BackgroundTasks, UploadFile, File, Depends, Response, status
+from fastapi.security import OAuth2PasswordBearer
 
+from jose import JWTError, jwt
 from typing import List, Optional
 from predict import Predictor, TranscriptionResult
 from pydantic import BaseModel, EmailStr
@@ -24,6 +28,10 @@ app = FastAPI()
 
 load_dotenv()
 
+SECRET_KEY = os.getenv("SENDER_PASSWORD")
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7 дней
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["voiceflow.ru"], 
@@ -35,6 +43,33 @@ app.add_middleware(
 predictor = Predictor()
 predictor.setup()
 
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+async def get_current_user(token: str = Depends(oauth2_scheme)):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        # Декодируем токен
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username: str = payload.get("sub")
+        if username is None:
+            raise credentials_exception
+    except JWTError:
+        raise credentials_exception
+    return username
+
+def create_access_token(data: dict, expires_delta: timedelta = None):
+    to_encode = data.copy()
+    expire = datetime.utcnow() + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
+    to_encode.update({"exp": expire})
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+def verify_password(plain_password, hashed_password):
+    return bcrypt.checkpw(plain_password.encode(), hashed_password.encode())
+
 def send_email(to_email: str, link: str):
     try:
         sender_email = "3735@voiceflow.ru" 
@@ -45,7 +80,6 @@ def send_email(to_email: str, link: str):
         subject = "Завершение регистрации"
         body = f"Пройдите по ссылке для завершения регистрации: {link}"
         
-        # Создаем MIME сообщение
         msg = MIMEMultipart()
         msg['From'] = sender_email
         msg['To'] = to_email
@@ -55,42 +89,8 @@ def send_email(to_email: str, link: str):
         with smtplib.SMTP_SSL(smtp_server, smtp_port) as server:
             server.login(sender_email, sender_password) 
             server.sendmail(sender_email, to_email, msg.as_string())
-            print(f"Email sent to {to_email}")
-    
     except Exception as e:
         print(f"Error sending email: {e}")
-
-# Модели
-class RegisterRequest(BaseModel):
-    email: EmailStr
-    password: str
-
-class LoginRequest(BaseModel):
-    email: EmailStr
-    password: str
-
-class CheckEmailRequest(BaseModel):
-    email: EmailStr
-
-class SpeakerSegment(BaseModel):
-    text: str
-    start: float
-    end: float
-    speaker: str
-    words: Optional[List[dict]] = None
-
-class TranscriptionResponse(BaseModel):
-    segments: List[SpeakerSegment]
-    num_speakers: int
-    language: str
-
-
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
 async def process_transcription(file_content: bytes):
     try:
@@ -106,11 +106,32 @@ async def process_transcription(file_content: bytes):
     except Exception as e:
         print(f"Ошибка обработки: {str(e)}")
 
+class RegisterRequest(BaseModel):
+    email: EmailStr
+    password: str
+
+class LoginRequest(BaseModel):
+    email: EmailStr
+    password: str
+
+class CheckEmailRequest(BaseModel):
+    email: EmailStr
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+@app.get("/api/validate-token")
+async def validate_token(current_user: str = Depends(get_current_user)):
+    return {"message": "Token is valid", "username": current_user}
+
 @app.post("/check")
 async def check_email(request: CheckEmailRequest, db: Session = Depends(get_db)):
     email = db.query(Email).filter(Email.email == request.email).first()
     if email:
-        # Если email уже зарегистрирован, перенаправляем на страницу логина
         return RedirectResponse(url="/login?email=" + request.email)
     
     unique_token = str(uuid.uuid4()) 
@@ -125,43 +146,39 @@ async def check_email(request: CheckEmailRequest, db: Session = Depends(get_db))
     return {"message": "Check your email to complete registration"}
 
 @app.post("/register")
-async def register(token: str, request: RegisterRequest, db: Session = Depends(get_db)):
-    email_record = db.query(Email).filter(Email.token == token).first()
-    if not email_record:
-        raise HTTPException(status_code=400, detail="Invalid or expired token")
-    
+async def register(request: RegisterRequest, db: Session = Depends(get_db)):
     existing_email = db.query(Email).filter(Email.email == request.email).first()
     if existing_email:
         raise HTTPException(status_code=400, detail="Email already exists")
-    
-    new_account = Account(username=request.email)
+
+    hashed_password = bcrypt.hashpw(request.password.encode(), bcrypt.gensalt()).decode()
+    encrypted_key = generate_encrypted_key(request.password)
+
+    new_account = Account(
+        email=request.email,
+        password_hash=hashed_password,
+        encrypted_key=base64.b64encode(encrypted_key).decode('utf-8')
+    )
     db.add(new_account)
     db.commit()
-    db.refresh(new_account)
 
-    encrypted_key = generate_encrypted_key(request.password)
-    new_account.key = base64.b64encode(encrypted_key).decode('utf-8')
+    access_token = create_access_token({"sub": request.email})
+    decrypted_key = decrypt_key(request.password, encrypted_key).hex()
 
-    # Удаляем токен после использования
-    email_record.token = None
-    db.commit()
-
-    return {"message": "Registration successful"}
+    return {"access_token": access_token, "key": decrypted_key, "email": request.email}
 
 @app.post("/login")
 async def login(request: LoginRequest, db: Session = Depends(get_db)):
-    email_record = db.query(Email).filter(Email.email == request.email).first()
-    if not email_record:
-        raise HTTPException(status_code=404, detail="Email not found")
+    user = db.query(Account).filter(Account.email == request.email).first()
+    if not user or not bcrypt.checkpw(request.password.encode(), user.password_hash.encode()):
+        raise HTTPException(status_code=400, detail="Invalid email or password")
+    
+    encrypted_data = base64.b64decode(user.encrypted_key)
+    decrypted_key = decrypt_key(request.password, encrypted_data).hex()
 
-    # Проверка пароля с использованием bcrypt
-    stored_encrypted_key = email_record.account.key
-    encrypted_data = base64.b64decode(stored_encrypted_key)
-    
-    # Расшифровка ключа с использованием функции из utils
-    decrypted_key = decrypt_key(request.password, encrypted_data)
-    
-    return {"message": "Login successful", "decrypted_key": decrypted_key.hex()}
+    access_token = create_access_token({"sub": request.email})
+
+    return {"access_token": access_token, "key": decrypted_key, "email": request.email}
 
 @app.post("/transcribe")
 async def transcribe(file: UploadFile = File(...), background_tasks: BackgroundTasks = BackgroundTasks(), decrypted_key: str = Depends(login), db: Session = Depends(get_db)):
