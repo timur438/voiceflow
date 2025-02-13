@@ -124,7 +124,7 @@ def get_db():
     finally:
         db.close()
 
-@app.get("/api/validate-token")
+@app.get("/validate-token")
 async def validate_token(current_user: str = Depends(get_current_user)):
     return {"message": "Token is valid", "username": current_user}
 
