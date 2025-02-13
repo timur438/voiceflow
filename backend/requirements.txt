@@ -12,10 +12,11 @@ pydub
 python-magic
 numpy
 sqlalchemy
+pymysql
 databases 
 passlib 
 cryptography
 pycryptodome
 bcrypt
 jwt
-jose
+python-jose

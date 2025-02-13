@@ -14,7 +14,7 @@ database = os.getenv('DB_NAME')
 ssl_ca = os.getenv('DB_SSL_CA')
 port = os.getenv('DB_PORT')
 
-DATABASE_URL = f"mysql+pymysql://{user}:{password}@{host}:{port}/{database}?ssl_ca={ssl_ca}"
+DATABASE_URL = f"mysql+pymysql://{user}:{password}@{host}:{port}/{database}"
 
 Base = declarative_base()
 
