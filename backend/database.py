@@ -25,10 +25,9 @@ class Account(Base):
     __tablename__ = 'accounts'
 
     id = Column(Integer, primary_key=True, index=True)
-    email = Column(String, unique=True, index=True) 
-    password_hash = Column(String) 
+    email = Column(String(255), unique=True, index=True)
+    password_hash = Column(String(255))
     encrypted_key = Column(LargeBinary)
-
     emails = relationship("Email", back_populates="account", uselist=False)
     transcripts = relationship("Transcript", back_populates="account")
 
@@ -36,7 +35,7 @@ class Email(Base):
     __tablename__ = 'emails'
 
     id = Column(Integer, primary_key=True, index=True)
-    email = Column(String, unique=True, index=True)
+    email = Column(String(255), unique=True, index=True)
     account_id = Column(Integer, ForeignKey('accounts.id'))
     account = relationship("Account", back_populates="emails")
 
@@ -44,7 +43,7 @@ class Transcript(Base):
     __tablename__ = 'transcripts'
 
     id = Column(Integer, primary_key=True, index=True)
-    encrypted_data = Column(String)
+    encrypted_data = Column(String(10000000))
     account_id = Column(Integer, ForeignKey('accounts.id'))
     account = relationship("Account", back_populates="transcripts")
 
