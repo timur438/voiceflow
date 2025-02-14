@@ -195,7 +195,7 @@ async def register(request: RegisterRequest, db: Session = Depends(get_db)):
     if not email:
         raise HTTPException(status_code=400, detail="Invalid or expired token")
 
-    existing_account = db.query(Account).filter(Account.email == request.email).first()
+    existing_account = db.query(Account).filter(Account.email == email).first()
     if existing_account:
         raise HTTPException(status_code=400, detail="Email already registered")
 
@@ -210,10 +210,10 @@ async def register(request: RegisterRequest, db: Session = Depends(get_db)):
     db.add(new_account)
     db.commit()
 
-    access_token = create_access_token({"sub": request.email})
+    access_token = create_access_token({"sub": email})
     decrypted_key = decrypt_key(request.password, encrypted_key).hex()
 
-    return {"access_token": access_token, "key": decrypted_key, "email": request.email}
+    return {"access_token": access_token, "key": decrypted_key, "email": email}
 
 @app.post("/login")
 async def login(request: LoginRequest, db: Session = Depends(get_db)):
