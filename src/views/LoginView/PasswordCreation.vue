@@ -40,16 +40,13 @@ export default defineComponent({
 
       try {
         const token = this.route.query.token as string;
-        const email = this.route.query.email as string;
 
         console.log("Token:", token);
-        console.log("Email:", email);
 
         const response = await axios.post(
           'https://voiceflow.ru/api/register',
           {
             token,
-            email,
             password: this.password,
           },
           {

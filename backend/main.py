@@ -20,6 +20,7 @@ from predict import Predictor, TranscriptionResult
 from pydantic import BaseModel, EmailStr
 from sqlalchemy.orm import Session
 from dotenv import load_dotenv
+from cryptography.fernet import Fernet
 
 from database import SessionLocal, Account, Email, Transcript 
 from utils import generate_encrypted_key, decrypt_key 
@@ -32,8 +33,11 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 
 SECRET_KEY = os.getenv("SENDER_PASSWORD")
+FERNET_KEY = base64.urlsafe_b64encode(hashlib.sha256(SECRET_KEY).digest())
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7 дней
+
+fernet = Fernet(FERNET_KEY)
 
 app.add_middleware(
     CORSMiddleware,
@@ -55,7 +59,6 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
-        # Декодируем токен
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         username: str = payload.get("sub")
         if username is None:
@@ -66,31 +69,28 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
 
 def generate_secure_token(email: str):
     timestamp = str(int(datetime.utcnow().timestamp()))
-    data = f"{email}:{timestamp}"
-    signature = hmac.new(SECRET_KEY.encode(), data.encode(), hashlib.sha256).hexdigest()
-    return f"{data}:{signature}"
+    encrypted_data = fernet.encrypt(f"{email}:{timestamp}".encode()).decode()
+    signature = hmac.new(SECRET_KEY.encode(), encrypted_data.encode(), hashlib.sha256).hexdigest()
+    return f"{encrypted_data}:{signature}"
 
-def verify_secure_token(token: str, email: str):
+def verify_secure_token(token: str):
     try:
-        parts = token.split(":")
-        if len(parts) != 3:
-            return False
+        encrypted_data, signature = token.split(":")
+        expected_signature = hmac.new(SECRET_KEY.encode(), encrypted_data.encode(), hashlib.sha256).hexdigest()
 
-        email_part, timestamp, signature = parts
-        if email_part != email:
-            return False
-
-        expected_signature = hmac.new(SECRET_KEY.encode(), f"{email}:{timestamp}".encode(), hashlib.sha256).hexdigest()
         if not hmac.compare_digest(expected_signature, signature):
-            return False
+            return None
 
+        decrypted_data = fernet.decrypt(encrypted_data.encode()).decode()
+        email, timestamp = decrypted_data.split(":")
+        
         token_time = datetime.utcfromtimestamp(int(timestamp))
         if datetime.utcnow() - token_time > timedelta(hours=1):
-            return False
+            return None  # Токен просрочен
 
-        return True
+        return email
     except Exception:
-        return False
+        return None
 
 def create_access_token(data: dict, expires_delta: timedelta = None):
     to_encode = data.copy()
@@ -130,7 +130,6 @@ async def process_transcription(file_content: bytes):
 
 class RegisterRequest(BaseModel):
     token: str
-    email: EmailStr
     password: str
 
 class LoginRequest(BaseModel):
@@ -192,20 +191,17 @@ async def check_email(request: CheckEmailRequest, db: Session = Depends(get_db))
 
 @app.post("/register")
 async def register(request: RegisterRequest, db: Session = Depends(get_db)):
-    existing_email = db.query(Email).filter(Email.email == request.email).first()
-    if not existing_email:
+    email = verify_secure_token(request.token)
+    if not email or email != request.email:
         raise HTTPException(status_code=400, detail="Invalid or expired token")
-    
-    if not verify_secure_token(request.token, request.email):
-        raise HTTPException(status_code=400, detail="Invalid or expired token")
-    
+
     existing_account = db.query(Account).filter(Account.email == request.email).first()
     if existing_account:
         raise HTTPException(status_code=400, detail="Email already registered")
-    
+
     hashed_password = bcrypt.hashpw(request.password.encode(), bcrypt.gensalt()).decode()
     encrypted_key = generate_encrypted_key(request.password)
-    
+
     new_account = Account(
         email=request.email,
         password_hash=hashed_password,
@@ -213,10 +209,10 @@ async def register(request: RegisterRequest, db: Session = Depends(get_db)):
     )
     db.add(new_account)
     db.commit()
-    
+
     access_token = create_access_token({"sub": request.email})
     decrypted_key = decrypt_key(request.password, encrypted_key).hex()
-    
+
     return {"access_token": access_token, "key": decrypted_key, "email": request.email}
 
 @app.post("/login")
