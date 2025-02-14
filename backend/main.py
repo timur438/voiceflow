@@ -76,7 +76,7 @@ def verify_password(plain_password, hashed_password):
 
 def send_email(to_email: str, link: str):
     try:
-        sender_email = "3735@voiceflow.ru" 
+        sender_email = "3735" 
         sender_password = os.getenv("SENDER_PASSWORD")
         smtp_server = "smtp.mail.selcloud.ru" 
         smtp_port = 1126 
