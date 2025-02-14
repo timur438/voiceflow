@@ -205,7 +205,7 @@ async def register(request: RegisterRequest, db: Session = Depends(get_db)):
     new_account = Account(
         email=email,
         password_hash=hashed_password,
-        encrypted_key=bytes(encrypted_key, 'utf-8')
+        encrypted_key=encrypted_key
     )
     db.add(new_account)
     db.commit()
