@@ -139,10 +139,10 @@ async def validate_token(current_user: str = Depends(get_current_user)):
 async def check_email(request: CheckEmailRequest, db: Session = Depends(get_db)):
     logger.info(f"Checking if email {request.email} already exists")
     
-    email = db.query(Email).filter(Email.email == request.email).first()
+    existing_email = db.query(Email).filter(Email.email == request.email).first()
     
-    if email:
-        account = db.query(Account).filter(Account.id == email.account_id).first()
+    if existing_email:
+        account = db.query(Account).filter(Account.id == existing_email.account_id).first()
         
         if account:
             logger.info(f"Email {request.email} is already associated with an account, redirecting to /login")
@@ -152,13 +152,24 @@ async def check_email(request: CheckEmailRequest, db: Session = Depends(get_db))
             unique_token = str(uuid.uuid4()) 
             registration_link = f"https://voiceflow.ru/register?token={unique_token}"
 
-            email_record = Email(email=request.email, token=unique_token)
-            db.add(email_record)
+            existing_email.token = unique_token
             db.commit()
             
             send_email(request.email, registration_link)
 
             return {"message": "Check your email to complete registration"}
+    
+    logger.info(f"Email {request.email} not found, generating registration link")
+    unique_token = str(uuid.uuid4()) 
+    registration_link = f"https://voiceflow.ru/register?token={unique_token}"
+
+    email_record = Email(email=request.email, token=unique_token)
+    db.add(email_record)
+    db.commit()
+    
+    send_email(request.email, registration_link)
+
+    return {"message": "Check your email to complete registration"}
     
     logger.info(f"Email {request.email} not found, generating registration link")
     unique_token = str(uuid.uuid4()) 
