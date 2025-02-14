@@ -42,11 +42,22 @@ export default defineComponent({
         const token = this.route.query.token as string;
         const email = this.route.query.email as string;
 
-        const response = await axios.post('https://voiceflow.ru/api/register', {
-          token: token,
-          email: email,
-          password: this.password,
-        });
+        console.log("Token:", token);
+        console.log("Email:", email);
+
+        const response = await axios.post(
+          'https://voiceflow.ru/api/register',
+          {
+            token,
+            email,
+            password: this.password,
+          },
+          {
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          }
+        );
 
         if (response.data.access_token) {
           document.cookie = `access_token=${response.data.access_token}; path=/; Secure`;
