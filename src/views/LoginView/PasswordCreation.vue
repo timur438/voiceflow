@@ -57,7 +57,7 @@ export default defineComponent({
 
         console.log("Token:", token);
 
-        const response = await axios.post(
+        await axios.post(
           'https://voiceflow.ru/api/register',
           {
             token,
@@ -70,11 +70,9 @@ export default defineComponent({
           }
         );
 
-        if (response.data.access_token) {
-          document.cookie = `access_token=${response.data.access_token}; path=/; Secure`;
-          document.cookie = `decrypted_key=${response.data.key}; path=/; Secure`;
-          this.router.push('/'); 
-        }
+        // Перенаправляем на страницу входа без сохранения куков
+        this.router.push('/login'); 
+
       } catch (error: unknown) {
         if (axios.isAxiosError(error)) {
           this.errorMessage = error.response?.data?.detail || this.t('errorOccurred');

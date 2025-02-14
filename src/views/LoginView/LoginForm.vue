@@ -44,6 +44,9 @@ export default defineComponent({
         if (response.data.access_token) {
           document.cookie = `access_token=${response.data.access_token}; path=/; Secure`;
           document.cookie = `decrypted_key=${response.data.key}; path=/; Secure`;
+
+          localStorage.setItem('email', this.email);
+
           this.router.push('/'); 
         }
       } catch (error: unknown) {

@@ -146,12 +146,12 @@ export default defineComponent({
       length: `${30 + i} мин`
     })));
 
-    const getCookie = (name: string) => {
-      const matches = document.cookie.match(new RegExp(`(^| )${name}=([^;]+)`));
-      return matches ? decodeURIComponent(matches[2]) : null;
+    const getItemFromLocalStorage = (name: string) => {
+      const item = localStorage.getItem(name);
+      return item ? JSON.parse(item) : null;
     };
 
-    const accountEmail = ref(getCookie('email') || 'unknown@example.com');
+    const accountEmail = ref(getItemFromLocalStorage('email') || 'unknown@example.com');
 
     const goToHome = () => {
       router.push({ name: 'MainView' });

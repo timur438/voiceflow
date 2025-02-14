@@ -213,7 +213,7 @@ async def register(request: RegisterRequest, db: Session = Depends(get_db)):
     access_token = create_access_token({"sub": email})
     decrypted_key = decrypt_key(request.password, encrypted_key).hex()
 
-    return {"access_token": access_token, "key": decrypted_key, "email": email}
+    return {"message": "Succesful"}
 
 @app.post("/login")
 async def login(request: LoginRequest, db: Session = Depends(get_db)):
