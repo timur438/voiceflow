@@ -124,7 +124,6 @@ class CheckEmailRequest(BaseModel):
 def get_db():
     db = SessionLocal()
     try:
-        logger.info("Successfully connected to the database")
         yield db
     except Exception as e:
         logger.error(f"Error connecting to the database: {e}")
@@ -138,10 +137,34 @@ async def validate_token(current_user: str = Depends(get_current_user)):
 
 @app.post("/check")
 async def check_email(request: CheckEmailRequest, db: Session = Depends(get_db)):
-    email = db.query(Email).filter(Email.email == request.email).first()
-    if email:
-        return RedirectResponse(url="/login?email=" + request.email)
+    logger.info(f"Checking if email {request.email} already exists")
     
+    # Проверяем наличие email в таблице Email
+    email = db.query(Email).filter(Email.email == request.email).first()
+    
+    if email:
+        # Если email найден в таблице Email, проверяем связан ли он с аккаунтом
+        account = db.query(Account).filter(Account.id == email.account_id).first()
+        
+        if account:
+            logger.info(f"Email {request.email} is already associated with an account, redirecting to /login")
+            return RedirectResponse(url="/login?email=" + request.email)
+        else:
+            logger.info(f"Email {request.email} is not associated with any account, generating registration link")
+            # Если аккаунта нет, генерируем новый токен для регистрации
+            unique_token = str(uuid.uuid4()) 
+            registration_link = f"https://voiceflow.ru/register?token={unique_token}"
+
+            email_record = Email(email=request.email, token=unique_token)
+            db.add(email_record)
+            db.commit()
+            
+            send_email(request.email, registration_link)
+
+            return {"message": "Check your email to complete registration"}
+    
+    # Если email не найден в таблице Email
+    logger.info(f"Email {request.email} not found, generating registration link")
     unique_token = str(uuid.uuid4()) 
     registration_link = f"https://voiceflow.ru/register?token={unique_token}"
 
