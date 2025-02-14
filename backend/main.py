@@ -192,7 +192,7 @@ async def check_email(request: CheckEmailRequest, db: Session = Depends(get_db))
 @app.post("/register")
 async def register(request: RegisterRequest, db: Session = Depends(get_db)):
     email = verify_secure_token(request.token)
-    if not email or email != request.email:
+    if not email:
         raise HTTPException(status_code=400, detail="Invalid or expired token")
 
     existing_account = db.query(Account).filter(Account.email == request.email).first()
