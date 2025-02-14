@@ -79,7 +79,7 @@ def send_email(to_email: str, link: str):
         sender_email = "3735@voiceflow.ru" 
         sender_password = os.getenv("SENDER_PASSWORD")
         smtp_server = "smtp.mail.selcloud.ru" 
-        smtp_port = 1126
+        smtp_port = 1126 
 
         subject = "Завершение регистрации"
         body = f"Пройдите по ссылке для завершения регистрации: {link}"
@@ -90,9 +90,13 @@ def send_email(to_email: str, link: str):
         msg['Subject'] = subject
         msg.attach(MIMEText(body, 'plain'))
 
-        with smtplib.SMTP_SSL(smtp_server, smtp_port) as server:
+        with smtplib.SMTP(smtp_server, smtp_port) as server:
+            server.set_debuglevel(1) 
+            server.ehlo() 
+            server.starttls() 
             server.login(sender_email, sender_password) 
             server.sendmail(sender_email, to_email, msg.as_string())
+            print("Email sent successfully!")
     except Exception as e:
         print(f"Error sending email: {e}")
 
