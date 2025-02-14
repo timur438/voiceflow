@@ -221,12 +221,12 @@ async def login(request: LoginRequest, db: Session = Depends(get_db)):
     if not user or not bcrypt.checkpw(request.password.encode(), user.password_hash.encode()):
         raise HTTPException(status_code=400, detail="Invalid email or password")
     
+    encrypted_data = base64.b64decode(user.encrypted_key)
     logger.info(f"Encrypted data length: {len(encrypted_data)}")
     
     if len(encrypted_data) < 48:  # 16 (salt) + 16 (nonce) + min 16 (ciphertext) 
         raise ValueError("Encrypted data is too short or corrupted")
     
-    encrypted_data = base64.b64decode(user.encrypted_key)
     decrypted_key = decrypt_key(request.password, encrypted_data).hex()
 
     access_token = create_access_token({"sub": request.email})
