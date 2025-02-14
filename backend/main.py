@@ -203,7 +203,7 @@ async def register(request: RegisterRequest, db: Session = Depends(get_db)):
     encrypted_key = generate_encrypted_key(request.password)
 
     new_account = Account(
-        email=request.email,
+        email=email,
         password_hash=hashed_password,
         encrypted_key=base64.b64encode(encrypted_key).decode('utf-8')
     )
