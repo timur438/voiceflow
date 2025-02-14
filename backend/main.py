@@ -99,7 +99,8 @@ async def process_transcription(file_content: bytes):
         print(f"Ошибка обработки: {str(e)}")
 
 class RegisterRequest(BaseModel):
-    email: EmailStr
+    token: str
+    email: str
     password: str
 
 class LoginRequest(BaseModel):
@@ -146,18 +147,6 @@ async def check_email(request: CheckEmailRequest, db: Session = Depends(get_db))
             send_email(request.email, registration_link)
 
             return {"message": "Check your email to complete registration"}
-    
-    logger.info(f"Email {request.email} not found, generating registration link")
-    unique_token = str(uuid.uuid4()) 
-    registration_link = f"https://voiceflow.ru/register?token={unique_token}"
-
-    email_record = Email(email=request.email, token=unique_token)
-    db.add(email_record)
-    db.commit()
-    
-    send_email(request.email, registration_link)
-
-    return {"message": "Check your email to complete registration"}
     
     logger.info(f"Email {request.email} not found, generating registration link")
     unique_token = str(uuid.uuid4()) 
