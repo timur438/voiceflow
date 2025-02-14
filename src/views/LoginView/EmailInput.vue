@@ -33,10 +33,10 @@ export default defineComponent({
       this.message = '';
 
       try {
-        const response = await axios.post('/api/check', { email: this.email });
+        const response = await axios.post('https://voiceflow.ru/api/check', { email: this.email });
 
         if (response.data.redirect) {
-          this.$router.push({ path: '/login', query: { email: this.email } });
+          this.$router.push({ path: 'https://voiceflow.ru/login', query: { email: this.email } });
         } else {
           this.message = this.t('checkEmail');
         }
