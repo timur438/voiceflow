@@ -4,6 +4,7 @@ import os
 import uuid
 import jwt
 import logging
+import subprocess
 from datetime import datetime, timedelta
 
 from fastapi.responses import JSONResponse, RedirectResponse
@@ -17,10 +18,6 @@ from predict import Predictor, TranscriptionResult
 from pydantic import BaseModel, EmailStr
 from sqlalchemy.orm import Session
 from dotenv import load_dotenv
-
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
 
 from database import SessionLocal, Account, Email, Transcript 
 from utils import generate_encrypted_key, decrypt_key 
@@ -76,28 +73,15 @@ def verify_password(plain_password, hashed_password):
 
 def send_email(to_email: str, link: str):
     try:
-        sender_email = "3735" 
-        sender_password = os.getenv("SENDER_PASSWORD")
-        smtp_server = "smtp.mail.selcloud.ru" 
-        smtp_port = 1126 
-
+        sender_email = "no-reply@voiceflow.ru"
         subject = "Завершение регистрации"
         body = f"Пройдите по ссылке для завершения регистрации: {link}"
         
-        msg = MIMEMultipart()
-        msg['From'] = sender_email
-        msg['To'] = to_email
-        msg['Subject'] = subject
-        msg.attach(MIMEText(body, 'plain'))
-
-        with smtplib.SMTP(smtp_server, smtp_port) as server:
-            server.set_debuglevel(1) 
-            server.ehlo() 
-            server.starttls() 
-            server.login(sender_email, sender_password) 
-            server.sendmail(sender_email, to_email, msg.as_string())
-            print("Email sent successfully!")
-    except Exception as e:
+        command = f'echo "{body}" | mail -s "{subject}" {to_email}'
+        
+        subprocess.run(command, shell=True, check=True)
+        print("Email sent successfully!")
+    except subprocess.CalledProcessError as e:
         print(f"Error sending email: {e}")
 
 async def process_transcription(file_content: bytes):
