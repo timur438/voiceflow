@@ -3,6 +3,7 @@ import bcrypt
 import os
 import uuid
 import jwt
+import logging
 from datetime import datetime, timedelta
 
 from fastapi.responses import JSONResponse, RedirectResponse
@@ -25,6 +26,9 @@ from database import SessionLocal, Account, Email, Transcript
 from utils import generate_encrypted_key, decrypt_key 
 
 app = FastAPI()
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 load_dotenv()
 
@@ -120,7 +124,11 @@ class CheckEmailRequest(BaseModel):
 def get_db():
     db = SessionLocal()
     try:
+        logger.info("Successfully connected to the database")
         yield db
+    except Exception as e:
+        logger.error(f"Error connecting to the database: {e}")
+        raise e
     finally:
         db.close()
 
