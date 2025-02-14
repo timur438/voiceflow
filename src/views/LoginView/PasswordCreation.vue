@@ -1,9 +1,23 @@
 <template>
-  <div class="form-container">
-    <h2>{{ t('createPassword') }}</h2>
-    <input type="password" v-model="password" placeholder="Password" />
-    <input type="password" v-model="confirmPassword" placeholder="Confirm Password" />
-    <button @click="createPassword">{{ t('confirm') }}</button>
+  <div class="login-container">
+    <div class="form-container">
+      <h2>{{ t('createPassword') }}</h2>
+
+      <p class="password-text">
+        {{ t('passwordComplexityInfo') }}
+      </p>
+      <p class="password-text">
+        {{ t('lostPasswordWarning') }}
+      </p>
+
+      <div class="password-container">
+        <input type="password" v-model="password" :placeholder="t('password')" />
+        <input type="password" v-model="confirmPassword" :placeholder="t('confirmPassword')" />
+      </div>
+      <button @click="createPassword" :disabled="loading">{{ t('confirm') }}</button>
+    
+      <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
+    </div>
   </div>
 </template>
 

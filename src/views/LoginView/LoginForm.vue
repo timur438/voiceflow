@@ -1,10 +1,12 @@
 <template>
-  <div class="form-container">
-    <h2>{{ t('login') }}</h2>
-    <input type="email" v-model="email" placeholder="Email" />
-    <input type="password" v-model="password" placeholder="Password" />
-    <button @click="login" :disabled="loading">{{ t('login') }}</button>
-    <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
+  <div class="login-container">
+    <div class="form-container">
+      <h2>{{ t('login') }}</h2>
+      <input type="email" v-model="email" placeholder="Email" />
+      <input type="password" v-model="password" placeholder="Password" />
+      <button @click="login" :disabled="loading">{{ t('login') }}</button>
+      <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
+    </div>
   </div>
 </template>
 
@@ -46,7 +48,7 @@ export default defineComponent({
         }
       } catch (error: unknown) {
         if (axios.isAxiosError(error)) {
-          this.errorMessage = error.response?.data?.detail || this.t('errorOccurred');
+          this.errorMessage = error.response?.data?.detail || this.t('unexpectedError');
         } else {
           this.errorMessage = this.t('unexpectedError');
         }

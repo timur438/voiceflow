@@ -1,12 +1,17 @@
 <template>
-  <div class="form-container">
-    <h2>{{ t('enterEmail') }}</h2>
-    <p class="info-text">{{ t('emailInfo') }}</p>
-    <input type="email" v-model="email" placeholder="Email" />
-    <button @click="sendEmail" :disabled="loading">
-      {{ loading ? t('loading') : t('send') }}
-    </button>
-    <p v-if="message" class="message">{{ message }}</p>
+  <div class="login-container">
+    <div class="form-container">
+      <h2>{{ t('enterEmail') }}</h2>
+      <p class="info-text">{{ t('emailInfo') }}</p>
+      <input type="email" v-model="email" placeholder="Email" />
+      <button @click="sendEmail" :disabled="loading">
+        {{ loading ? t('loading') : t('send') }}
+      </button>
+      <p v-if="message" class="message">{{ message }}</p>
+      <p class="already-have-account">
+        <router-link to="/login">{{ t('alreadyHaveAccount') }}</router-link>
+      </p>
+    </div>
   </div>
 </template>
 

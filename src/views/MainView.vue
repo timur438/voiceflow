@@ -10,7 +10,7 @@
         </button>
         <div class="account-info" @click="goToSettings" style="cursor: pointer;">
           <div class="account-circle"></div>
-          <span class="account-email">example@example.com</span>
+          <span class="account-email">{{ accountEmail }}</span>
         </div>
       </div>
       <div class="meeting-header">
@@ -145,6 +145,13 @@ export default defineComponent({
       status: i % 2 === 0 ? 'new' : 'old',
       length: `${30 + i} мин`
     })));
+
+    const getCookie = (name: string) => {
+      const matches = document.cookie.match(new RegExp(`(^| )${name}=([^;]+)`));
+      return matches ? decodeURIComponent(matches[2]) : null;
+    };
+
+    const accountEmail = ref(getCookie('email') || 'unknown@example.com');
 
     const goToHome = () => {
       router.push({ name: 'MainView' });
@@ -292,7 +299,8 @@ export default defineComponent({
       handleFileChange,
       handleDrop,
       handleDragOver,
-      uploadFile
+      uploadFile,
+      accountEmail
     };
   }
 });

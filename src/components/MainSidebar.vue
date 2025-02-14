@@ -19,7 +19,7 @@
               {{ $t('settingsAndIntegrations') }}
             </router-link>
           </li>
-          <li><a href="#"><img src="@/assets/img/logout.svg" alt="Logout" />{{ $t('logout') }}</a></li>
+          <li><a href="#" @click.prevent="logout"><img src="@/assets/img/logout.svg" alt="Logout" />{{ $t('logout') }}</a></li>
         </ul>
       </nav>
     </div>
@@ -37,7 +37,15 @@ export default defineComponent({
     const goToHome = () => {
       router.push({ name: 'MainView' });
     };
-    return { goToHome };
+    const logout = () => {
+      if (confirm("Вы действительно хотите выйти?")) {
+        document.cookie = "access_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+        document.cookie = "decrypted_key=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+        document.cookie = "email=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+        router.push("/login");
+      }
+    };
+    return { goToHome, logout };
   }
 });
 </script>

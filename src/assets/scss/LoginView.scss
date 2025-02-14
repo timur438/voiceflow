@@ -19,10 +19,46 @@
   width: 25rem;
 }
 
+.password-container {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+}
+
+.password-container input {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid $border-color;
+  border-radius: 4px;
+  font-size: $font-size-small;
+}
+
+.already-have-account {
+  font-size: $font-size-small; 
+  text-align: center;
+  margin-top: 10px;
+}
+
+.already-have-account a {
+  text-decoration: none;
+}
+
+.already-have-account a:hover {
+  text-decoration: underline;
+}
+
 .info-text {
   color: $border-color;
   text-align: center;
   width: 65%;
+  margin: 0;
+  font-size: $font-size-small;
+}
+
+.password-text {
+  color: $border-color;
+  text-align: center;
+  width: 80%;
   margin: 0;
   font-size: $font-size-small;
 }

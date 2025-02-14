@@ -27,7 +27,7 @@ const messages = {
     enterEmail: 'Enter your email',
     emailInfo: 'If the email is found in our database, a message will be sent to it.',
     send: 'Send',
-    createPassword: 'Create and confirm your password',
+    createPassword: 'Create your password',
     confirm: 'Confirm',
     login: 'Login',
     new: 'New',
@@ -55,6 +55,12 @@ const messages = {
     serverError: 'Server error: {status} {statusText}',
     uploadError: 'Upload error: {error}',
     unknownError: 'Unknown error',
+    alreadyHaveAccount: "Already have an account?",
+    loading: "Loading...",
+    errorOccurred: "An error occurred while sending the email",
+    unexpectedError: "Unexpected error, please try again",
+    passwordComplexityInfo: "The complexity of your password determines the level of protection for your account.",
+    lostPasswordWarning: "If you lose your password, your transcripts will be lost permanently.",
 
   },
   ru: {
@@ -83,7 +89,7 @@ const messages = {
     enterEmail: 'Введите ваш email',
     emailInfo: 'Если почта найдется в нашей базе, на нее придет письмо.',
     send: 'Отправить',
-    createPassword: 'Создайте и подтвердите ваш пароль',
+    createPassword: 'Создайте пароль',
     confirm: 'Подтвердить',
     login: 'Вход',
     new: 'Новая',
@@ -111,6 +117,14 @@ const messages = {
     serverError: 'Ошибка сервера: {status} {statusText}',
     uploadError: 'Ошибка при загрузке файла: {error}',
     unknownError: 'Неизвестная ошибка',
+    alreadyHaveAccount: "Уже есть аккаунт?",
+    loading: "Загрузка...",
+    errorOccurred: "Произошла ошибка при отправке письма",
+    unexpectedError: "Неожиданная ошибка, пожалуйста, попробуйте снова",
+    passwordComplexityInfo: "Сложность пароля определяет уровень защиты вашей учетной записи.",
+    lostPasswordWarning: "Если вы потеряете пароль, ваши транскрипты будут утеряны навсегда.",
+    password: "Пароль",
+    confirmPassword: "Повторите пароль",
   }
 };
 
