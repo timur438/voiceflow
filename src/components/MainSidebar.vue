@@ -3,7 +3,7 @@
     <div class="sidebar-content">
       <div class="logo" @click="goToHome">
         <div class="logo-box"></div>
-        <button class="logo-button">Whisper</button>
+        <button class="logo-button">Voiceflow</button>
       </div>
       <nav class="menu">
         <ul>

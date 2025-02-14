@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, LargeBinary, Text
+from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, LargeBinary, Text, Boolean
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
@@ -28,6 +28,7 @@ class Account(Base):
     email = Column(String(255), unique=True, index=True)
     password_hash = Column(String(255))
     encrypted_key = Column(LargeBinary)
+    is_admin = Column(Boolean, default=False)
     emails = relationship("Email", back_populates="account", uselist=False)
     transcripts = relationship("Transcript", back_populates="account")
 
