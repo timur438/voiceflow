@@ -5,6 +5,8 @@ import uuid
 import jwt
 import logging
 import subprocess
+import hashlib
+import hmac
 from datetime import datetime, timedelta
 
 from fastapi.responses import JSONResponse, RedirectResponse
@@ -62,6 +64,34 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
         raise credentials_exception
     return username
 
+def generate_secure_token(email: str):
+    timestamp = str(int(datetime.utcnow().timestamp()))
+    data = f"{email}:{timestamp}"
+    signature = hmac.new(SECRET_KEY.encode(), data.encode(), hashlib.sha256).hexdigest()
+    return f"{data}:{signature}"
+
+def verify_secure_token(token: str, email: str):
+    try:
+        parts = token.split(":")
+        if len(parts) != 3:
+            return False
+
+        email_part, timestamp, signature = parts
+        if email_part != email:
+            return False
+
+        expected_signature = hmac.new(SECRET_KEY.encode(), f"{email}:{timestamp}".encode(), hashlib.sha256).hexdigest()
+        if not hmac.compare_digest(expected_signature, signature):
+            return False
+
+        token_time = datetime.utcfromtimestamp(int(timestamp))
+        if datetime.utcnow() - token_time > timedelta(hours=1):
+            return False
+
+        return True
+    except Exception:
+        return False
+
 def create_access_token(data: dict, expires_delta: timedelta = None):
     to_encode = data.copy()
     expire = datetime.utcnow() + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
@@ -100,7 +130,7 @@ async def process_transcription(file_content: bytes):
 
 class RegisterRequest(BaseModel):
     token: str
-    email: str
+    email: EmailStr
     password: str
 
 class LoginRequest(BaseModel):
@@ -138,10 +168,10 @@ async def check_email(request: CheckEmailRequest, db: Session = Depends(get_db))
             return RedirectResponse(url="/login?email=" + request.email)
         else:
             logger.info(f"Email {request.email} is not associated with any account, generating registration link")
-            unique_token = str(uuid.uuid4()) 
-            registration_link = f"https://voiceflow.ru/register?token={unique_token}"
+            secure_token = generate_secure_token(request.email)
+            registration_link = f"https://voiceflow.ru/register?token={secure_token}"
 
-            existing_email.token = unique_token
+            existing_email.token = secure_token
             db.commit()
             
             send_email(request.email, registration_link)
@@ -149,10 +179,10 @@ async def check_email(request: CheckEmailRequest, db: Session = Depends(get_db))
             return {"message": "Check your email to complete registration"}
     
     logger.info(f"Email {request.email} not found, generating registration link")
-    unique_token = str(uuid.uuid4()) 
-    registration_link = f"https://voiceflow.ru/register?token={unique_token}"
+    secure_token = generate_secure_token(request.email)
+    registration_link = f"https://voiceflow.ru/register?token={secure_token}"
 
-    email_record = Email(email=request.email, token=unique_token)
+    email_record = Email(email=request.email, token=secure_token)
     db.add(email_record)
     db.commit()
     
@@ -163,12 +193,19 @@ async def check_email(request: CheckEmailRequest, db: Session = Depends(get_db))
 @app.post("/register")
 async def register(request: RegisterRequest, db: Session = Depends(get_db)):
     existing_email = db.query(Email).filter(Email.email == request.email).first()
-    if existing_email:
-        raise HTTPException(status_code=400, detail="Email already exists")
-
+    if not existing_email:
+        raise HTTPException(status_code=400, detail="Invalid or expired token")
+    
+    if not verify_secure_token(request.token, request.email):
+        raise HTTPException(status_code=400, detail="Invalid or expired token")
+    
+    existing_account = db.query(Account).filter(Account.email == request.email).first()
+    if existing_account:
+        raise HTTPException(status_code=400, detail="Email already registered")
+    
     hashed_password = bcrypt.hashpw(request.password.encode(), bcrypt.gensalt()).decode()
     encrypted_key = generate_encrypted_key(request.password)
-
+    
     new_account = Account(
         email=request.email,
         password_hash=hashed_password,
@@ -176,10 +213,10 @@ async def register(request: RegisterRequest, db: Session = Depends(get_db)):
     )
     db.add(new_account)
     db.commit()
-
+    
     access_token = create_access_token({"sub": request.email})
     decrypted_key = decrypt_key(request.password, encrypted_key).hex()
-
+    
     return {"access_token": access_token, "key": decrypted_key, "email": request.email}
 
 @app.post("/login")
