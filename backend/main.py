@@ -33,7 +33,7 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 
 SECRET_KEY = os.getenv("SENDER_PASSWORD")
-FERNET_KEY = base64.urlsafe_b64encode(hashlib.sha256(SECRET_KEY).digest())
+FERNET_KEY = base64.urlsafe_b64encode(hashlib.sha256(SECRET_KEY.encode()).digest())
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7 дней
 
