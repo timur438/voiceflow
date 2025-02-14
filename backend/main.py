@@ -139,11 +139,9 @@ async def validate_token(current_user: str = Depends(get_current_user)):
 async def check_email(request: CheckEmailRequest, db: Session = Depends(get_db)):
     logger.info(f"Checking if email {request.email} already exists")
     
-    # Проверяем наличие email в таблице Email
     email = db.query(Email).filter(Email.email == request.email).first()
     
     if email:
-        # Если email найден в таблице Email, проверяем связан ли он с аккаунтом
         account = db.query(Account).filter(Account.id == email.account_id).first()
         
         if account:
@@ -151,7 +149,6 @@ async def check_email(request: CheckEmailRequest, db: Session = Depends(get_db))
             return RedirectResponse(url="/login?email=" + request.email)
         else:
             logger.info(f"Email {request.email} is not associated with any account, generating registration link")
-            # Если аккаунта нет, генерируем новый токен для регистрации
             unique_token = str(uuid.uuid4()) 
             registration_link = f"https://voiceflow.ru/register?token={unique_token}"
 
@@ -163,7 +160,6 @@ async def check_email(request: CheckEmailRequest, db: Session = Depends(get_db))
 
             return {"message": "Check your email to complete registration"}
     
-    # Если email не найден в таблице Email
     logger.info(f"Email {request.email} not found, generating registration link")
     unique_token = str(uuid.uuid4()) 
     registration_link = f"https://voiceflow.ru/register?token={unique_token}"
