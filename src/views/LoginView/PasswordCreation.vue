@@ -16,7 +16,6 @@
       </div>
       <button @click="createPassword" :disabled="loading">{{ t('confirm') }}</button>
     
-      <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
     </div>
   </div>
 </template>

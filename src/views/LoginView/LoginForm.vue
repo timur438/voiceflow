@@ -5,7 +5,7 @@
       <input type="email" v-model="email" placeholder="Email" />
       <input type="password" v-model="password" placeholder="Password" />
       <button @click="login" :disabled="loading">{{ t('login') }}</button>
-      <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
+      <p v-if="errorMessage" class="error-text">{{ errorMessage }}</p>
     </div>
   </div>
 </template>
@@ -51,7 +51,11 @@ export default defineComponent({
         }
       } catch (error: unknown) {
         if (axios.isAxiosError(error)) {
-          this.errorMessage = error.response?.data?.detail || this.t('unexpectedError');
+          if (error.response?.status === 400) {
+            this.errorMessage = this.t('invalidCredentials'); // Неправильный логин или пароль
+          } else {
+            this.errorMessage = error.response?.data?.detail || this.t('unexpectedError');
+          }
         } else {
           this.errorMessage = this.t('unexpectedError');
         }

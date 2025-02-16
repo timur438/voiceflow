@@ -11,7 +11,7 @@ from datetime import datetime, timedelta
 
 from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi import FastAPI, HTTPException, BackgroundTasks, UploadFile, File, Depends, Response, status
+from fastapi import FastAPI, HTTPException, BackgroundTasks, UploadFile, File, Depends, Body, status
 from fastapi.security import OAuth2PasswordBearer
 
 from jose import JWTError, jwt
@@ -114,19 +114,23 @@ def send_email(to_email: str, link: str):
     except subprocess.CalledProcessError as e:
         print(f"Error sending email: {e}")
 
-async def process_transcription(file_content: bytes):
+async def process_transcription(file_content: bytes, decrypted_key: bytes, email: str):
     try:
         file_string = base64.b64encode(file_content).decode("utf-8")
-        
+
         result: TranscriptionResult = await predictor.predict(
             file_string=file_string,
             num_speakers=None,
             translate=False,
-            language=None,
+            language='ru',
+            email=email,
+            key=decrypted_key
         )
-        
+
+        logger.info(f"Transcription completed for {email} using key {decrypted_key[:6]}***")
+
     except Exception as e:
-        print(f"Ошибка обработки: {str(e)}")
+        logger.error(f"Ошибка обработки транскрипции для {email}: {str(e)}")
 
 class RegisterRequest(BaseModel):
     token: str
@@ -228,29 +232,39 @@ async def login(request: LoginRequest, db: Session = Depends(get_db)):
     if len(encrypted_data) < 48:  # 16 (salt) + 16 (nonce) + min 16 (ciphertext) 
         raise ValueError("Encrypted data is too short or corrupted")
     
-    decrypted_key = decrypt_key(request.password, encrypted_data).hex()
+    decrypted_key = decrypt_key(request.password, encrypted_data)
 
     access_token = create_access_token({"sub": request.email})
 
     return {"access_token": access_token, "key": decrypted_key, "email": request.email}
 
 @app.post("/transcribe")
-async def transcribe(file: UploadFile = File(...), background_tasks: BackgroundTasks = BackgroundTasks(), decrypted_key: str = Depends(login), db: Session = Depends(get_db)):
-
+async def transcribe(
+    file: UploadFile = File(...),
+    background_tasks: BackgroundTasks = BackgroundTasks(),
+    token: str = Depends(oauth2_scheme),
+    decrypted_key: bytes = Body(...),
+    db: Session = Depends(get_db)
+):
     try:
+        email = await get_current_user(token)
+        
+        if not decrypted_key:
+            raise HTTPException(status_code=400, detail="Decrypted key is required")
+
         MAX_FILE_SIZE = 1000 * 1024 * 1024
         file_size = 0
         file_content = bytearray()
-        
+
         while chunk := await file.read(1024 * 1024):
             file_size += len(chunk)
             if file_size > MAX_FILE_SIZE:
                 raise HTTPException(status_code=413, detail="File size too large. Maximum size is 1000MB")
             file_content.extend(chunk)
-        
+
         response = JSONResponse(status_code=202, content={"message": "File accepted for processing"})
-        
-        background_tasks.add_task(process_transcription, bytes(file_content))
+
+        background_tasks.add_task(process_transcription, bytes(file_content), decrypted_key, email)
 
         return response
 
@@ -258,6 +272,21 @@ async def transcribe(file: UploadFile = File(...), background_tasks: BackgroundT
         import traceback
         error_details = f"Ошибка обработки файла: {str(e)}\n{traceback.format_exc()}"
         raise HTTPException(status_code=500, detail=error_details)
+    
+@app.get("/transcripts")
+async def get_transcripts(current_user: str = Depends(get_current_user), db: Session = Depends(get_db)):
+    email = current_user
+    
+    account = db.query(Account).filter(Account.email == email).first()
+    if not account:
+        raise HTTPException(status_code=404, detail="Account not found")
+
+    transcripts = db.query(Transcript).filter(Transcript.account_id == account.id).all()
+    
+    if not transcripts:
+        raise HTTPException(status_code=404, detail="No transcripts found")
+
+    return {"transcripts": [transcript.encrypted_data for transcript in transcripts]}
 
 if __name__ == "__main__":
     import uvicorn

@@ -7,3 +7,7 @@ declare module "*.vue" {
   export default component;
 }
 
+declare module "crypto-js" {
+  import CryptoJS from "crypto-js";
+  export = CryptoJS;
+}

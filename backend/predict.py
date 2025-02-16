@@ -15,6 +15,9 @@ from threading import Thread, Lock
 import time
 from dotenv import load_dotenv
 import logging
+from cryptography.fernet import Fernet
+from sqlalchemy.orm import Session
+from database import SessionLocal, Account, Email, Transcript 
 
 load_dotenv()
 
@@ -304,24 +307,43 @@ class Predictor:
         except Exception as e:
             logging.error(f"Summary generation error: {str(e)}")
             raise RuntimeError(f"Summary generation error: {str(e)}")
+        
+    def save_transcript(email: str, transcript_text: str, encryption_key: bytes, db: Session):
+        """Шифрует транскрипт и сохраняет его в базу данных."""
+        
+        cipher = Fernet(encryption_key)
+        encrypted_data = cipher.encrypt(transcript_text.encode())
+
+        account = db.query(Account).filter(Account.email == email).first()
+        if not account:
+            raise ValueError("Аккаунт с таким email не найден")
+
+        transcript = Transcript(encrypted_data=encrypted_data.decode(), account=account)
+        db.add(transcript)
+        db.commit()
+
+        return transcript.id
 
     async def predict(self, file_string: str, num_speakers: int = None, translate: bool = False, 
-                 language: str = "ru", group_segments: bool = False, 
-                 prompt_type: str = "summary") -> TranscriptionResult:
+                    language: str = "ru", group_segments: bool = False, 
+                    prompt_type: str = "summary", email: str = None, decrypted_key: bytes = None, 
+                    db: Session = None) -> TranscriptionResult:
         temp_input = tempfile.mktemp()
         wav_file = None
         try:
-            logging.info("Decoding input file...")
+            logging.info(f"Decoding input file for user {email}...")
             with open(temp_input, "wb") as f:
                 f.write(base64.b64decode(file_string))
             wav_file = self._convert_to_wav(temp_input)
             future_result = {}
+
             def process_task():
                 try:
+                    logging.info(f"Processing audio for {email} with key {decrypted_key[:6]}***")
+                    
                     speaker_segments, detected_speakers = self._get_speaker_segments(wav_file, num_speakers)
                     result = self._process_audio(wav_file, language, translate)
                     
-                    # Создаем предварительные сегменты
                     raw_segments = [
                         {
                             "text": seg["text"].strip(),
@@ -333,10 +355,8 @@ class Predictor:
                         for seg in result["segments"]
                     ]
                     
-                    # Объединяем сегменты
                     merged_segments = self._merge_segments(raw_segments)
                     
-                    # Создаем финальные TranscriptionSegment объекты
                     segments = [TranscriptionSegment(**seg) for seg in merged_segments]
 
                     full_text = " ".join([s.text for s in segments])
@@ -350,16 +370,25 @@ class Predictor:
                         translation=None,
                         summary=summary
                     )
-                    
-                    output_filename = os.path.join("temp_files", f"transcription_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.json")
-                    with open(output_filename, "w") as f:
-                        json.dump(transcription_result.dict(), f, indent=4, ensure_ascii=False)
-                    logging.info(f"Saved transcription: {output_filename}")
+
+                    cipher = Fernet(decrypted_key)
+                    encrypted_data = cipher.encrypt(full_text.encode())
+
+                    account = db.query(Account).filter(Account.email == email).first()
+                    if not account:
+                        raise ValueError("Аккаунт с таким email не найден")
+
+                    transcript = Transcript(encrypted_data=encrypted_data.decode(), account=account)
+                    db.add(transcript)
+                    db.commit()
+
+                    logging.info(f"Saved transcription for {email} to database")
+
                     future_result['result'] = transcription_result
                 except Exception as e:
-                    logging.error(f"Prediction error: {str(e)}")
+                    logging.error(f"Prediction error for {email}: {str(e)}")
                     future_result['error'] = e
-            
+
             self.transcription_queue.add_task(process_task)
             while 'result' not in future_result and 'error' not in future_result:
                 await asyncio.sleep(0.1)

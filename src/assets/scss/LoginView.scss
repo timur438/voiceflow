@@ -55,6 +55,14 @@
   font-size: $font-size-small;
 }
 
+.error-text {
+  color: red;
+  text-align: center;
+  width: 65%;
+  margin: 0;
+  font-size: $font-size-small;
+}
+
 .password-text {
   color: $border-color;
   text-align: center;

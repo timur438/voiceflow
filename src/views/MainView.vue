@@ -108,10 +108,11 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref } from 'vue';
+import { defineComponent, ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import MainSidebar from '@/components/MainSidebar.vue';
+import CryptoJS from "crypto-js";
 
 interface Meeting {
   id: number;
@@ -146,12 +147,65 @@ export default defineComponent({
       length: `${30 + i} мин`
     })));
 
-    const getItemFromLocalStorage = (name: string) => {
-      const item = localStorage.getItem(name);
-      return item ? JSON.parse(item) : null;
+    const getItemFromCookies = (name: string) => {
+      const matches = document.cookie.match(new RegExp(
+        "(?:^|; )" + name.replace(/([.$?*|{}()\[\]\/\+^])/g, '\\$1') + "=([^;]*)"
+      ));
+      return matches ? decodeURIComponent(matches[1]) : null;
     };
 
-    const accountEmail = ref(getItemFromLocalStorage('email') || 'unknown@example.com');
+    const accessToken = getItemFromCookies('access_token');
+    const decryptedKey = getItemFromCookies('decrypted_key');
+
+    const accountEmail = ref(accessToken ? 'user@example.com' : 'unknown@example.com');
+
+    const fetchTranscripts = async () => {
+      try {
+        if (!accessToken || !decryptedKey) {
+          alert(t('missingCredentials'));
+          return;
+        }
+
+        const response = await fetch('https://voiceflow.ru/api/transcripts', {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error(t('serverError', { 
+            status: response.status, 
+            statusText: response.statusText 
+          }));
+        }
+
+        const result = await response.json();
+        
+        // Расшифровываем транскрипты
+        const decryptedTranscripts = result.transcripts.map((transcript: { encrypted_data: string }) => {
+          const decryptedText = CryptoJS.AES.decrypt(transcript.encrypted_data, decryptedKey).toString(CryptoJS.enc.Utf8);
+          return { ...transcript, decryptedText };
+        });
+
+        // Сохраняем транскрипты в локальное хранилище
+        localStorage.setItem('transcripts', JSON.stringify(decryptedTranscripts));
+
+        return decryptedTranscripts;
+
+      } catch (error) {
+        alert(t('fetchError', { 
+          error: error instanceof Error ? error.message : t('unknownError')
+        }));
+      }
+    };
+
+    // Загрузка транскриптов при монтировании компонента
+    onMounted(async () => {
+      const loadedTranscripts = await fetchTranscripts();
+      if (loadedTranscripts) {
+        meetings.value = loadedTranscripts;
+      }
+    });
 
     const goToHome = () => {
       router.push({ name: 'MainView' });
@@ -241,7 +295,6 @@ export default defineComponent({
         });
 
         if (response.status === 202) {
-          // Файл успешно принят сервером
           meetings.value.unshift({
             id: meetings.value.length + 1,
             date: new Date().toLocaleDateString(),
@@ -249,7 +302,7 @@ export default defineComponent({
             status: 'new',
             length: t('processing')
           });
-          closeUploadPopup(); // Закрываем попап
+          closeUploadPopup();
           return;
         }
 
@@ -258,14 +311,6 @@ export default defineComponent({
             status: response.status, 
             statusText: response.statusText 
           }));
-        }
-
-        const result = await response.json();
-        
-        const existingMeeting = meetings.value.find(m => m.name === meetingName.value);
-        if (existingMeeting && result.segments.length > 0) {
-          const lastSegment = result.segments[result.segments.length - 1];
-          existingMeeting.length = `${Math.round(lastSegment.end / 60)} мин`;
         }
 
       } catch (error) {
@@ -277,20 +322,19 @@ export default defineComponent({
       }
     };
 
-
     return {
-      goToHome,
-      goToSettings,
-      goToMeeting,
       meetings,
+      accountEmail,
       showPopup,
       showUploadPopup,
       meetingToDelete,
       meetingName,
-      fileInput,
       selectedFile,
       isFileSelected,
       isUploading,
+      goToHome,
+      goToSettings,
+      goToMeeting,
       confirmDelete,
       deleteMeeting,
       cancelDelete,
@@ -299,11 +343,8 @@ export default defineComponent({
       handleFileChange,
       handleDrop,
       handleDragOver,
-      uploadFile,
-      accountEmail
+      uploadFile
     };
   }
 });
 </script>
-
-<style scoped src="@/assets/scss/MainView.scss"></style>

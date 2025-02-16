@@ -7,7 +7,6 @@
       <button @click="sendEmail" :disabled="loading">
         {{ loading ? t('loading') : t('send') }}
       </button>
-      <p v-if="message" class="message">{{ message }}</p>
       <p class="already-have-account">
         <router-link to="/login">{{ t('alreadyHaveAccount') }}</router-link>
       </p>
