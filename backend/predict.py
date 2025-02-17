@@ -82,7 +82,6 @@ class Predictor:
         self.llama_path = "./llama.cpp/main"
         self.llama_model_path = "./llama.cpp/models/llama-2-7b-chat.gguf"
 
-        # Проверяем наличие модели llama
         if not os.path.exists(self.llama_model_path):
             raise RuntimeError("Llama model not found. Please download it first.")
         
@@ -92,7 +91,7 @@ class Predictor:
         }
 
         logging.info("Setting up Predictor...")
-        self.model_path = "./whisper.cpp/models/ggml-large-v3-turbo.bin"
+        self.model_path = "./whisper.cpp/models/ggml-large-v3.bin"
         if not os.path.exists(self.model_path):
             logging.info("Model not found, downloading...")
             self._download_model("large-v3-turbo")
@@ -396,7 +395,8 @@ class Predictor:
 
                     logging.info(f"Transcription saved to {save_path}")
 
-                    encrypted_data = self._encrypt_aes(segments, decrypted_key)
+                    segments_json = json.dumps([s.dict() for s in segments], ensure_ascii=False)
+                    encrypted_data = self._encrypt_aes(segments_json, decrypted_key)
 
                     transcript.encrypted_data = encrypted_data.decode() 
                     db.commit()
