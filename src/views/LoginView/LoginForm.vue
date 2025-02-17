@@ -5,6 +5,9 @@
       <input type="email" v-model="email" placeholder="Email" />
       <input type="password" v-model="password" placeholder="Password" />
       <button @click="login" :disabled="loading">{{ t('login') }}</button>
+      <p class="already-have-account">
+        <router-link to="/check">{{ t('haveNotAccount') }}</router-link>
+      </p>
       <p v-if="errorMessage" class="error-text">{{ errorMessage }}</p>
     </div>
   </div>

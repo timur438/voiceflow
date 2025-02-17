@@ -235,7 +235,7 @@ async def transcribe(
     file: UploadFile = File(...),
     background_tasks: BackgroundTasks = BackgroundTasks(),
     token: str = Depends(get_current_user),
-    decrypted_key: bytes = Body(...),
+    decrypted_key: str = Body(...),
     db: Session = Depends(get_db)
 ):
     try:
