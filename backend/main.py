@@ -68,8 +68,21 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         username: str = payload.get("sub")
+        
         if username is None:
             raise credentials_exception
+        
+        expiration_time = payload.get("exp")
+        if expiration_time is None:
+            raise credentials_exception
+        
+        if datetime.utcfromtimestamp(expiration_time) < datetime.utcnow():
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token has expired",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        
     except JWTError:
         raise credentials_exception
     return username
