@@ -34,7 +34,7 @@ const routes = [
     path: '/',
     name: 'MainView',
     component: MainView,
-    meta: { requiresAuth: false }
+    meta: { requiresAuth: true }
   },
   {
     path: '/login',
