@@ -91,7 +91,7 @@ class Predictor:
         }
 
         logging.info("Setting up Predictor...")
-        self.model_path = "./whisper.cpp/models/ggml-large-v3.bin"
+        self.model_path = "./whisper.cpp/models/ggml-large-v3-turbo.bin"
         if not os.path.exists(self.model_path):
             logging.info("Model not found, downloading...")
             self._download_model("large-v3-turbo")
