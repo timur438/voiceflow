@@ -113,6 +113,7 @@ import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import MainSidebar from '@/components/MainSidebar.vue';
 import { decryptTranscriptData, getAccessToken, getDecryptedKey } from '@/utils/crypto';
+import axios from 'axios';
 
 interface Meeting {
   id: number;
@@ -244,20 +245,20 @@ export default defineComponent({
       }
 
       const accessToken = document.cookie.split('; ').find(row => row.startsWith('access_token='))?.split('=')[1];
-      console.log(accessToken)
       if (!accessToken) {
-        return false;
+        alert(t('missingToken'));
+        isUploading.value = false;
+        return;
       }
 
       try {
-        const response = await fetch('https://voiceflow.ru/api/transcribe', {
-          method: 'POST',
+        const response = await axios.post('https://voiceflow.ru/api/transcribe', formData, {
           headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-          body: formData // Отправляем formData
+            Authorization: `Bearer ${accessToken}`
+          }
         });
 
+        // Проверка статуса ответа
         if (response.status === 202) {
           meetings.value.unshift({
             id: meetings.value.length + 1,
@@ -270,19 +271,10 @@ export default defineComponent({
           return;
         }
 
-        if (!response.ok) {
-          throw new Error(t('serverError', { 
-            status: response.status, 
-            statusText: response.statusText 
-          }));
-        }
-
-        const result = await response.json();
-        const existingMeeting = meetings.value.find(m => m.name === meetingName.value);
-        if (existingMeeting && result.segments.length > 0) {
-          const lastSegment = result.segments[result.segments.length - 1];
-          existingMeeting.length = `${Math.round(lastSegment.end / 60)} мин`;
-        }
+        throw new Error(t('serverError', { 
+          status: response.status, 
+          statusText: response.statusText 
+        }));
       } catch (error) {
         alert(t('uploadError', { 
           error: error instanceof Error ? error.message : t('unknownError')
@@ -306,17 +298,15 @@ export default defineComponent({
       }
 
       try {
-        const response = await fetch('https://voiceflow.ru/api/transcripts', {
-          method: 'GET',
+        const response = await axios.get('https://voiceflow.ru/api/transcripts', {
           headers: {
             'Authorization': `Bearer ${token}`
           }
         });
 
-        console.log("API Response Status:", response.status);
-
-        if (response.ok) {
-          const { transcripts } = await response.json();
+        // Проверка успешного ответа
+        if (response.status === 200) {
+          const { transcripts } = response.data;
           console.log("Received Transcripts:", transcripts);
 
           const decryptedTranscripts = transcripts.map((encryptedData: string) => {
