@@ -398,7 +398,7 @@ class Predictor:
                     segments_json = json.dumps([s.dict() for s in segments], ensure_ascii=False)
                     encrypted_data = self._encrypt_aes(segments_json, decrypted_key)
 
-                    transcript.encrypted_data = encrypted_data.decode() 
+                    transcript.encrypted_data = encrypted_data
                     db.commit()
 
                     logging.info(f"Updated transcription for {email} with ID {transcript.id}")
