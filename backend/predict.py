@@ -325,6 +325,15 @@ class Predictor:
                 try:
                     logging.info(f"Processing audio for {email} with key {decrypted_key[:6]}***")
                     
+                    account = db.query(Account).filter(Account.email == email).first()
+                    if not account:
+                        raise ValueError("Аккаунт с таким email не найден")
+                    
+                    transcript = Transcript(encrypted_data='', account=account)
+                    db.add(transcript)
+                    db.commit()
+                    db.refresh(transcript)
+
                     speaker_segments, detected_speakers = self._get_speaker_segments(wav_file, num_speakers)
                     result = self._process_audio(wav_file, language, translate)
                     
@@ -358,15 +367,10 @@ class Predictor:
                     cipher = Fernet(decrypted_key)
                     encrypted_data = cipher.encrypt(full_text.encode())
 
-                    account = db.query(Account).filter(Account.email == email).first()
-                    if not account:
-                        raise ValueError("Аккаунт с таким email не найден")
-
-                    transcript = Transcript(encrypted_data=encrypted_data.decode(), account=account)
-                    db.add(transcript)
+                    transcript.encrypted_data = encrypted_data.decode() 
                     db.commit()
 
-                    logging.info(f"Saved transcription for {email} to database")
+                    logging.info(f"Updated transcription for {email} with ID {transcript.id}")
 
                     future_result['result'] = transcription_result
                 except Exception as e:

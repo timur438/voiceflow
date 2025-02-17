@@ -139,7 +139,7 @@ async def process_transcription(file_content: bytes, decrypted_key: bytes, email
             translate=False,
             language='ru',
             email=email,
-            key=decrypted_key
+            decrypted_key=decrypted_key
         )
 
         logger.info(f"Transcription completed for {email} using key {decrypted_key[:6]}***")
@@ -254,7 +254,7 @@ async def transcribe(
 ):
     try:
         email = token
-                
+
         if not decrypted_key:
             raise HTTPException(status_code=400, detail="Decrypted key is required")
 
