@@ -379,22 +379,6 @@ class Predictor:
                         summary=None
                     )
 
-                    # 🔹 Сохранение результата в JSON-файл
-                    save_path = f"transcriptions/{email}_transcription_{transcript.id}.json"
-                    os.makedirs("transcriptions", exist_ok=True)  # Создаем папку, если её нет
-                    
-                    with open(save_path, "w", encoding="utf-8") as f:
-                        json.dump({
-                            "email": email,
-                            "transcript_id": transcript.id,
-                            "text": full_text,
-                            "segments": [s.dict() for s in segments],
-                            "language": result.get("language", "auto"),
-                            "num_speakers": detected_speakers
-                        }, f, ensure_ascii=False, indent=4)
-
-                    logging.info(f"Transcription saved to {save_path}")
-
                     segments_json = json.dumps([s.dict() for s in segments], ensure_ascii=False)
                     encrypted_data = self._encrypt_aes(segments_json, decrypted_key)
 
