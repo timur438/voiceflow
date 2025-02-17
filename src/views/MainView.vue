@@ -255,7 +255,6 @@ export default defineComponent({
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
-            // X-Encryption-Key будет добавляться как часть формы, а не в заголовки
           },
           body: formData // Отправляем formData
         });
