@@ -243,18 +243,16 @@ export default defineComponent({
         return;
       }
 
-      const token = getAccessToken();
-      if (!token) {
-        alert(t('missingAuth'));
-        isUploading.value = false;
-        return;
+      const accessToken = document.cookie.split('; ').find(row => row.startsWith('access_token='))?.split('=')[1];
+      if (!accessToken) {
+        return false;
       }
 
       try {
         const response = await fetch('https://voiceflow.ru/api/transcribe', {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${token}`,
+            Authorization: `Bearer ${accessToken}`,
           },
           body: formData // Отправляем formData
         });
