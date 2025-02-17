@@ -229,15 +229,22 @@ export default defineComponent({
         alert(t('selectFileAndName'));
         return;
       }
-
+      
       isUploading.value = true;
       const formData = new FormData();
       formData.append('file', selectedFile.value);
+      
+      const decryptedKey = getDecryptedKey();
+      if (decryptedKey) {
+        formData.append('decrypted_key', decryptedKey); 
+      } else {
+        alert(t('missingKey'));
+        isUploading.value = false;
+        return;
+      }
 
       const token = getAccessToken();
-      const key = getDecryptedKey();
-
-      if (!token || !key) {
+      if (!token) {
         alert(t('missingAuth'));
         isUploading.value = false;
         return;
@@ -248,9 +255,9 @@ export default defineComponent({
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
-            'X-Encryption-Key': key
+            // X-Encryption-Key будет добавляться как часть формы, а не в заголовки
           },
-          body: formData
+          body: formData // Отправляем formData
         });
 
         if (response.status === 202) {
