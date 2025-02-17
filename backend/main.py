@@ -290,4 +290,14 @@ async def get_transcripts(current_user: str = Depends(get_current_user), db: Ses
 
 if __name__ == "__main__":
     import uvicorn
+
+    try:
+        db = SessionLocal()
+        db.execute("SELECT 1")
+        db.close()
+        logger.info("✅ Успешное подключение к базе данных!")
+    except Exception as e:
+        logger.error(f"❌ Ошибка подключения к базе данных: {e}")
+        exit(1)
+
     uvicorn.run(app, host="0.0.0.0", port=8080)
