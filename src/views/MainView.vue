@@ -112,7 +112,7 @@ import { defineComponent, ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import MainSidebar from '@/components/MainSidebar.vue';
-import CryptoJS from "crypto-js";
+import { decryptTranscriptData, getAccessToken, getDecryptedKey } from '@/utils/crypto';
 
 interface Meeting {
   id: number;
@@ -139,73 +139,19 @@ export default defineComponent({
     const isFileSelected = ref(false);
     const isUploading = ref(false);
 
-    const meetings = ref<Meeting[]>(Array.from({ length: 30 }, (_, i) => ({
-      id: i + 1,
-      date: `0${i + 1}.01.2023`,
-      name: `Встреча ${i + 1}`,
-      status: i % 2 === 0 ? 'new' : 'old',
-      length: `${30 + i} мин`
-    })));
+    const meetings = ref<Meeting[]>([]);  // Данные встреч
 
-    const getItemFromCookies = (name: string) => {
-      const matches = document.cookie.match(new RegExp(
-        "(?:^|; )" + name.replace(/([.$?*|{}()\[\]\/\+^])/g, '\\$1') + "=([^;]*)"
-      ));
-      return matches ? decodeURIComponent(matches[1]) : null;
-    };
-
-    const accessToken = getItemFromCookies('access_token');
-    const decryptedKey = getItemFromCookies('decrypted_key');
-
-    const accountEmail = ref(accessToken ? 'user@example.com' : 'unknown@example.com');
-
-    const fetchTranscripts = async () => {
+    const getItemFromLocalStorage = (name: string) => {
+      const item = localStorage.getItem(name);
       try {
-        if (!accessToken || !decryptedKey) {
-          alert(t('missingCredentials'));
-          return;
-        }
-
-        const response = await fetch('https://voiceflow.ru/api/transcripts', {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error(t('serverError', { 
-            status: response.status, 
-            statusText: response.statusText 
-          }));
-        }
-
-        const result = await response.json();
-        
-        // Расшифровываем транскрипты
-        const decryptedTranscripts = result.transcripts.map((transcript: { encrypted_data: string }) => {
-          const decryptedText = CryptoJS.AES.decrypt(transcript.encrypted_data, decryptedKey).toString(CryptoJS.enc.Utf8);
-          return { ...transcript, decryptedText };
-        });
-
-        // Сохраняем транскрипты в локальное хранилище
-        localStorage.setItem('transcripts', JSON.stringify(decryptedTranscripts));
-
-        return decryptedTranscripts;
-
-      } catch (error) {
-        alert(t('fetchError', { 
-          error: error instanceof Error ? error.message : t('unknownError')
-        }));
+        return item ? JSON.parse(item) : null;
+      } catch (e) {
+        console.error(`Ошибка при парсинге локального хранилища для '${name}':`, e);
+        return null;
       }
     };
 
-    // Загрузка транскриптов при монтировании компонента
-    onMounted(async () => {
-      const loadedTranscripts = await fetchTranscripts();
-      if (loadedTranscripts) {
-        meetings.value = loadedTranscripts;
-      }
-    });
+    const accountEmail = ref(getItemFromLocalStorage('email') || 'unknown@example.com');
 
     const goToHome = () => {
       router.push({ name: 'MainView' });
@@ -302,7 +248,7 @@ export default defineComponent({
             status: 'new',
             length: t('processing')
           });
-          closeUploadPopup();
+          closeUploadPopup(); // Закрываем попап
           return;
         }
 
@@ -311,6 +257,14 @@ export default defineComponent({
             status: response.status, 
             statusText: response.statusText 
           }));
+        }
+
+        const result = await response.json();
+        
+        const existingMeeting = meetings.value.find(m => m.name === meetingName.value);
+        if (existingMeeting && result.segments.length > 0) {
+          const lastSegment = result.segments[result.segments.length - 1];
+          existingMeeting.length = `${Math.round(lastSegment.end / 60)} мин`;
         }
 
       } catch (error) {
@@ -322,19 +276,64 @@ export default defineComponent({
       }
     };
 
+    const loadTranscripts = async () => {
+      const token = getAccessToken();
+      const key = getDecryptedKey();
+
+      // Логируем значения токена и ключа
+      console.log("Access Token:", token);
+      console.log("Decrypted Key:", key);
+
+      if (!token || !key) {
+        console.log("Token or key is missing.");
+        return;
+      }
+
+      try {
+        const response = await fetch('https://voiceflow.ru/api/transcripts', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        console.log("API Response Status:", response.status);
+
+        if (response.ok) {
+          const { transcripts } = await response.json();
+          console.log("Received Transcripts:", transcripts);
+
+          const decryptedTranscripts = transcripts.map((encryptedData: string) => {
+            const decrypted = decryptTranscriptData(encryptedData, key);
+            console.log("Decrypted Transcript:", decrypted);
+            return decrypted;
+          });
+
+          localStorage.setItem('transcripts', JSON.stringify(decryptedTranscripts));
+          meetings.value = decryptedTranscripts;
+        } else {
+          console.error("Failed to fetch transcripts:", response.statusText);
+        }
+      } catch (error) {
+        console.error("Error fetching transcripts:", error);
+      }
+    };
+
+    onMounted(loadTranscripts);
+
     return {
+      goToHome,
+      goToSettings,
+      goToMeeting,
       meetings,
-      accountEmail,
       showPopup,
       showUploadPopup,
       meetingToDelete,
       meetingName,
+      fileInput,
       selectedFile,
       isFileSelected,
       isUploading,
-      goToHome,
-      goToSettings,
-      goToMeeting,
       confirmDelete,
       deleteMeeting,
       cancelDelete,
@@ -343,8 +342,11 @@ export default defineComponent({
       handleFileChange,
       handleDrop,
       handleDragOver,
-      uploadFile
+      uploadFile,
+      accountEmail
     };
   }
 });
 </script>
+
+<style scoped src="@/assets/scss/MainView.scss"></style>

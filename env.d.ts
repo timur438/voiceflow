@@ -11,3 +11,9 @@ declare module "crypto-js" {
   import CryptoJS from "crypto-js";
   export = CryptoJS;
 }
+
+declare module '@/utils/crypto' {
+  export function decryptTranscriptData(encryptedData: string, key: string): string;
+  export function getAccessToken(): string | null;
+  export function getDecryptedKey(): string | null;
+}
