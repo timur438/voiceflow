@@ -27,7 +27,7 @@ class Account(Base):
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String(255), unique=True, index=True)
     password_hash = Column(String(255))
-    encrypted_key = Column(String)
+    encrypted_key = Column(String(512))
     is_admin = Column(Boolean, default=False)
     emails = relationship("Email", back_populates="account", uselist=False)
     transcripts = relationship("Transcript", back_populates="account")
