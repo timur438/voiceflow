@@ -216,9 +216,6 @@ async def register(request: RegisterRequest, db: Session = Depends(get_db)):
     db.add(new_account)
     db.commit()
 
-    access_token = create_access_token({"sub": email})
-    decrypted_key = decrypt_key(request.password, encrypted_key).hex()
-
     return {"message": "Succesful"}
 
 @app.post("/login")
@@ -227,13 +224,7 @@ async def login(request: LoginRequest, db: Session = Depends(get_db)):
     if not user or not bcrypt.checkpw(request.password.encode(), user.password_hash.encode()):
         raise HTTPException(status_code=400, detail="Invalid email or password")
     
-    encrypted_data = user.encrypted_key
-    logger.info(f"Encrypted data length: {len(encrypted_data)}")
-    
-    if len(encrypted_data) < 48:  # 16 (salt) + 16 (nonce) + min 16 (ciphertext) 
-        raise ValueError("Encrypted data is too short or corrupted")
-    
-    decrypted_key = decrypt_key(request.password, encrypted_data)
+    decrypted_key = decrypt_key(request.password, user.encrypted_key) 
 
     access_token = create_access_token({"sub": request.email})
 

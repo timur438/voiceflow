@@ -310,7 +310,7 @@ class Predictor:
 
     async def predict(self, file_string: str, num_speakers: int = None, translate: bool = False, 
                     language: str = "ru", group_segments: bool = False, 
-                    prompt_type: str = "summary", email: str = None, decrypted_key: bytes = None, 
+                    prompt_type: str = "summary", email: str = None, decrypted_key: str = None, 
                     db: Session = None) -> TranscriptionResult:
         temp_input = tempfile.mktemp()
         wav_file = None
