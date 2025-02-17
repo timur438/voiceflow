@@ -355,7 +355,7 @@ class Predictor:
                     segments = [TranscriptionSegment(**seg) for seg in merged_segments]
 
                     full_text = " ".join([s.text for s in segments])
-                    summary = self._generate_summary(full_text, prompt_type)
+                    #summary = self._generate_summary(full_text, prompt_type)
 
                     transcription_result = TranscriptionResult(
                         segments=segments,
@@ -363,7 +363,7 @@ class Predictor:
                         num_speakers=detected_speakers,
                         text=full_text,
                         translation=None,
-                        summary=summary
+                        summary=None
                     )
 
                     cipher = Fernet(decrypted_key)
