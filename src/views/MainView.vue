@@ -234,9 +234,22 @@ export default defineComponent({
       const formData = new FormData();
       formData.append('file', selectedFile.value);
 
+      const token = getAccessToken();
+      const key = getDecryptedKey();
+
+      if (!token || !key) {
+        alert(t('missingAuth'));
+        isUploading.value = false;
+        return;
+      }
+
       try {
         const response = await fetch('https://voiceflow.ru/api/transcribe', {
           method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'X-Encryption-Key': key
+          },
           body: formData
         });
 
@@ -248,7 +261,7 @@ export default defineComponent({
             status: 'new',
             length: t('processing')
           });
-          closeUploadPopup(); // Закрываем попап
+          closeUploadPopup();
           return;
         }
 
@@ -260,13 +273,11 @@ export default defineComponent({
         }
 
         const result = await response.json();
-        
         const existingMeeting = meetings.value.find(m => m.name === meetingName.value);
         if (existingMeeting && result.segments.length > 0) {
           const lastSegment = result.segments[result.segments.length - 1];
           existingMeeting.length = `${Math.round(lastSegment.end / 60)} мин`;
         }
-
       } catch (error) {
         alert(t('uploadError', { 
           error: error instanceof Error ? error.message : t('unknownError')
