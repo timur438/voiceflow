@@ -307,22 +307,6 @@ class Predictor:
         except Exception as e:
             logging.error(f"Summary generation error: {str(e)}")
             raise RuntimeError(f"Summary generation error: {str(e)}")
-        
-    def save_transcript(email: str, transcript_text: str, encryption_key: bytes, db: Session):
-        """Шифрует транскрипт и сохраняет его в базу данных."""
-        
-        cipher = Fernet(encryption_key)
-        encrypted_data = cipher.encrypt(transcript_text.encode())
-
-        account = db.query(Account).filter(Account.email == email).first()
-        if not account:
-            raise ValueError("Аккаунт с таким email не найден")
-
-        transcript = Transcript(encrypted_data=encrypted_data.decode(), account=account)
-        db.add(transcript)
-        db.commit()
-
-        return transcript.id
 
     async def predict(self, file_string: str, num_speakers: int = None, translate: bool = False, 
                     language: str = "ru", group_segments: bool = False, 
