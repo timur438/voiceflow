@@ -253,8 +253,8 @@ async def transcribe(
     db: Session = Depends(get_db)
 ):
     try:
-        email = await get_current_user(token)
-        
+        email = token
+                
         if not decrypted_key:
             raise HTTPException(status_code=400, detail="Decrypted key is required")
 
