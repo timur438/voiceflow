@@ -144,10 +144,10 @@ export default defineComponent({
     const getItemFromLocalStorage = (name: string) => {
       const item = localStorage.getItem(name);
       try {
-        return item ? JSON.parse(item) : null;
+        return item ? JSON.parse(item) : item;
       } catch (e) {
         console.error(`Ошибка при парсинге локального хранилища для '${name}':`, e);
-        return null;
+        return item;
       }
     };
 
