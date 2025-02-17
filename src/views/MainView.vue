@@ -288,10 +288,6 @@ export default defineComponent({
       const token = getAccessToken();
       const key = getDecryptedKey();
 
-      // Логируем значения токена и ключа
-      console.log("Access Token:", token);
-      console.log("Decrypted Key:", key);
-
       if (!token || !key) {
         console.log("Token or key is missing.");
         return;
@@ -304,7 +300,6 @@ export default defineComponent({
           }
         });
 
-        // Проверка успешного ответа
         if (response.status === 200) {
           const { transcripts } = response.data;
           console.log("Received Transcripts:", transcripts);

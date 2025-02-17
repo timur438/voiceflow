@@ -19,6 +19,10 @@ from cryptography.fernet import Fernet
 from sqlalchemy.orm import Session
 from database import SessionLocal, Account, Email, Transcript 
 
+from Crypto.Cipher import AES
+from Crypto.Util.Padding import pad
+import hashlib
+
 load_dotenv()
 
 logging.basicConfig(
@@ -104,6 +108,17 @@ class Predictor:
         ).to(torch.device("cuda" if torch.cuda.is_available() else "cpu"))
 
         self.transcription_queue = TranscriptionQueue(max_concurrent=3)
+
+    def _encrypt_aes(self, data: str, key: str) -> str:
+        key_bytes = hashlib.sha256(key.encode()).digest()
+
+        iv = os.urandom(16)
+
+        cipher = AES.new(key_bytes, AES.MODE_CBC, iv)
+        ciphertext = cipher.encrypt(pad(data.encode(), AES.block_size))
+
+        result = base64.b64encode(iv + ciphertext).decode()
+        return result
 
     def _download_model(self, model_name):
         logging.info(f"Downloading model: {model_name}")
@@ -355,7 +370,6 @@ class Predictor:
                     segments = [TranscriptionSegment(**seg) for seg in merged_segments]
 
                     full_text = " ".join([s.text for s in segments])
-                    #summary = self._generate_summary(full_text, prompt_type)
 
                     transcription_result = TranscriptionResult(
                         segments=segments,
@@ -366,8 +380,23 @@ class Predictor:
                         summary=None
                     )
 
-                    cipher = Fernet(decrypted_key)
-                    encrypted_data = cipher.encrypt(full_text.encode())
+                    # 🔹 Сохранение результата в JSON-файл
+                    save_path = f"transcriptions/{email}_transcription_{transcript.id}.json"
+                    os.makedirs("transcriptions", exist_ok=True)  # Создаем папку, если её нет
+                    
+                    with open(save_path, "w", encoding="utf-8") as f:
+                        json.dump({
+                            "email": email,
+                            "transcript_id": transcript.id,
+                            "text": full_text,
+                            "segments": [s.dict() for s in segments],
+                            "language": result.get("language", "auto"),
+                            "num_speakers": detected_speakers
+                        }, f, ensure_ascii=False, indent=4)
+
+                    logging.info(f"Transcription saved to {save_path}")
+
+                    encrypted_data = self._encrypt_aes(segments, decrypted_key)
 
                     transcript.encrypted_data = encrypted_data.decode() 
                     db.commit()
