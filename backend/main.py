@@ -21,6 +21,7 @@ from pydantic import BaseModel, EmailStr
 from sqlalchemy.orm import Session
 from dotenv import load_dotenv
 from cryptography.fernet import Fernet
+from sqlalchemy.sql import text
 
 from database import SessionLocal, Account, Email, Transcript 
 from utils import generate_encrypted_key, decrypt_key 
@@ -293,7 +294,7 @@ if __name__ == "__main__":
 
     try:
         db = SessionLocal()
-        db.execute("SELECT 1")
+        db.execute(text("SELECT 1"))
         db.close()
         logger.info("✅ Успешное подключение к базе данных!")
     except Exception as e:
