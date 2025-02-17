@@ -242,7 +242,7 @@ async def login(request: LoginRequest, db: Session = Depends(get_db)):
 async def transcribe(
     file: UploadFile = File(...),
     background_tasks: BackgroundTasks = BackgroundTasks(),
-    token: str = Depends(oauth2_scheme),
+    token: str = Depends(get_current_user),
     decrypted_key: bytes = Body(...),
     db: Session = Depends(get_db)
 ):
