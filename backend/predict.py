@@ -390,6 +390,12 @@ class Predictor:
                     )
 
                     segments_json = json.dumps([s.dict() for s in segments], ensure_ascii=False)
+
+                    # Сохранение данных в файл перед шифрованием
+                    temp_output = tempfile.mktemp()
+                    with open(temp_output, "w", encoding="utf-8") as f:
+                        f.write(segments_json)
+
                     encrypted_data = self._encrypt_aes(segments_json, decrypted_key)
 
                     transcript.encrypted_data = encrypted_data
