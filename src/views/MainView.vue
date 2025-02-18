@@ -131,7 +131,6 @@
                 v-model.number="speakerCount"
                 min="1"
                 required
-                :placeholder="$t('speakerCountPlaceholder')"
               />
             </div>
           </div>
