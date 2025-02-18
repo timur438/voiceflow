@@ -155,7 +155,6 @@ import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import MainSidebar from "@/components/MainSidebar.vue";
 import {
-  decryptTranscriptData,
   getAccessToken,
   getDecryptedKey,
 } from "@/utils/crypto";
@@ -385,25 +384,56 @@ export default defineComponent({
         if (response.status === 200) {
           const { transcripts } = response.data;
           
-          // Добавляем фильтрацию null-значений
-          const validTranscripts = transcripts
-            .map((encrypted: string) => {
-              const decrypted = decryptTranscriptData(encrypted, key);
-              if (!decrypted) {
-                console.warn("Skipping invalid transcript entry");
-              }
-              return decrypted;
-            })
-            .filter((t: Meeting | null): t is Meeting => t !== null);
+          const base64ToArrayBuffer = (base64: string) => {
+            const binaryString = atob(base64);
+            const bytes = new Uint8Array(binaryString.length);
+            for (let i = 0; i < binaryString.length; i++) {
+              bytes[i] = binaryString.charCodeAt(i);
+            }
+            return bytes.buffer;
+          };
 
-          meetings.value = validTranscripts;
+          const decryptedTranscripts = await Promise.all(
+            transcripts.map(async (encrypted: string) => {
+              try {
+                const encryptedBuffer = base64ToArrayBuffer(encrypted);
+                const iv = encryptedBuffer.slice(0, 16);
+                const ciphertext = encryptedBuffer.slice(16);
+
+                const encoder = new TextEncoder();
+                const keyData = encoder.encode(key);
+                const keyHash = await crypto.subtle.digest('SHA-256', keyData);
+
+                const cryptoKey = await crypto.subtle.importKey(
+                  'raw',
+                  keyHash,
+                  { name: 'AES-CBC' },
+                  false,
+                  ['decrypt']
+                );
+
+                const decrypted = await crypto.subtle.decrypt(
+                  { name: 'AES-CBC', iv },
+                  cryptoKey,
+                  ciphertext
+                );
+
+                return new TextDecoder().decode(decrypted);
+              } catch (error) {
+                console.error('Decryption error:', error);
+                return null;
+              }
+            })
+          );
+
+          const validTranscripts = decryptedTranscripts.filter(t => t !== null);
           
-          // Сохраняем только валидные данные
+          meetings.value = validTranscripts;
           localStorage.setItem("transcripts", JSON.stringify(validTranscripts));
         }
       } catch (error) {
         console.error("Error fetching transcripts:", error);
-        meetings.value = []; // Сбрасываем список при ошибке
+        meetings.value = [];
       }
     };
 
