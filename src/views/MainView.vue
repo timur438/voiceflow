@@ -300,19 +300,15 @@ export default defineComponent({
       }
 
       isUploading.value = true;
+
       const formData = new FormData();
       formData.append("file", selectedFile.value);
-      formData.append("speaker_count", speakerCount.value.toString());
-      formData.append("meeting_name", meetingName.value);
 
-      const decryptedKey = getDecryptedKey();
-      if (decryptedKey) {
-        formData.append("decrypted_key", decryptedKey);
-      } else {
-        alert(t("missingKey"));
-        isUploading.value = false;
-        return;
-      }
+      const requestBody = {
+        decrypted_key: getDecryptedKey(),
+        meetingName: meetingName.value,
+        speaker_count: speakerCount.value
+      };
 
       const accessToken = document.cookie
         .split("; ")
@@ -331,7 +327,9 @@ export default defineComponent({
           {
             headers: {
               Authorization: `Bearer ${accessToken}`,
+              "Content-Type": "multipart/form-data",
             },
+            params: requestBody,
           },
         );
 
