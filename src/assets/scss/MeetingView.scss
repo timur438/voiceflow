@@ -1,4 +1,4 @@
-@import './variables';
+@import "./variables";
 
 .main-container {
   display: flex;
@@ -42,7 +42,8 @@
   align-items: center;
 }
 
-.share, .export {
+.share,
+.export {
   margin-right: 20px;
   cursor: pointer;
   color: $text-color;
@@ -66,7 +67,7 @@
 .meeting-content {
   margin-top: 20px;
   text-align: left;
-  margin: 0 300px; 
+  margin: 0 300px;
 }
 
 .meeting-title {
@@ -135,19 +136,19 @@
 .tab {
   margin-right: 20px;
   cursor: pointer;
-  color: gray; 
+  color: gray;
   font-size: $font-size-small;
   position: relative;
 }
 
 .tab.active {
-  color: black; 
+  color: black;
 }
 
 .tab.active::after {
-  content: '';
+  content: "";
   position: absolute;
-  bottom: -13px; 
+  bottom: -13px;
   left: 0;
   right: 0;
   height: 2px;
@@ -190,7 +191,7 @@
   font-family: $font-family;
   font-weight: 400;
   margin: 5px 0;
-  line-height: 1.6; 
+  line-height: 1.6;
 }
 
 .summary-block ul {
@@ -203,7 +204,7 @@
   font-family: $font-family;
   font-weight: 400;
   margin: 5px 0;
-  line-height: 1.6; 
+  line-height: 1.6;
 }
 
 .meeting-content h2 {

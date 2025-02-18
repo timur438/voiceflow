@@ -1,38 +1,47 @@
 <template>
   <div class="login-container">
     <div class="form-container">
-      <h2>{{ t('createPassword') }}</h2>
+      <h2>{{ t("createPassword") }}</h2>
 
       <p class="password-text">
-        {{ t('passwordComplexityInfo') }}
+        {{ t("passwordComplexityInfo") }}
       </p>
       <p class="password-text">
-        {{ t('lostPasswordWarning') }}
+        {{ t("lostPasswordWarning") }}
       </p>
 
       <div class="password-container">
-        <input type="password" v-model="password" :placeholder="t('password')" />
-        <input type="password" v-model="confirmPassword" :placeholder="t('confirmPassword')" />
+        <input
+          type="password"
+          v-model="password"
+          :placeholder="t('password')"
+        />
+        <input
+          type="password"
+          v-model="confirmPassword"
+          :placeholder="t('confirmPassword')"
+        />
       </div>
-      <button @click="createPassword" :disabled="loading">{{ t('confirm') }}</button>
-    
+      <button @click="createPassword" :disabled="loading">
+        {{ t("confirm") }}
+      </button>
     </div>
   </div>
 </template>
 
 <script lang="ts">
-import { defineComponent } from 'vue';
-import { useI18n } from 'vue-i18n';
-import axios from 'axios';
-import { useRouter, useRoute } from 'vue-router';
+import { defineComponent } from "vue";
+import { useI18n } from "vue-i18n";
+import axios from "axios";
+import { useRouter, useRoute } from "vue-router";
 
 export default defineComponent({
   data() {
     return {
-      password: '',
-      confirmPassword: '',
+      password: "",
+      confirmPassword: "",
       loading: false,
-      errorMessage: ''
+      errorMessage: "",
     };
   },
   setup() {
@@ -44,12 +53,12 @@ export default defineComponent({
   methods: {
     async createPassword() {
       if (this.password !== this.confirmPassword) {
-        alert(this.t('passwordMismatch'));
+        alert(this.t("passwordMismatch"));
         return;
       }
 
       this.loading = true;
-      this.errorMessage = '';
+      this.errorMessage = "";
 
       try {
         const token = this.route.query.token as string;
@@ -57,32 +66,32 @@ export default defineComponent({
         console.log("Token:", token);
 
         await axios.post(
-          'https://voiceflow.ru/api/register',
+          "https://voiceflow.ru/api/register",
           {
             token,
             password: this.password,
           },
           {
             headers: {
-              'Content-Type': 'application/json',
+              "Content-Type": "application/json",
             },
-          }
+          },
         );
 
         // Перенаправляем на страницу входа без сохранения куков
-        this.router.push('/login'); 
-
+        this.router.push("/login");
       } catch (error: unknown) {
         if (axios.isAxiosError(error)) {
-          this.errorMessage = error.response?.data?.detail || this.t('errorOccurred');
+          this.errorMessage =
+            error.response?.data?.detail || this.t("errorOccurred");
         } else {
-          this.errorMessage = this.t('unexpectedError');
+          this.errorMessage = this.t("unexpectedError");
         }
       } finally {
         this.loading = false;
       }
-    }
-  }
+    },
+  },
 });
 </script>
 

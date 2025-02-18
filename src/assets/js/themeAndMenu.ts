@@ -1,19 +1,19 @@
 export function initializeThemeAndMenu(): void {
-  const hamburger = document.querySelector('.hamburger') as HTMLElement
-  const navList = document.querySelector('.nav__list') as HTMLElement
+  const hamburger = document.querySelector(".hamburger") as HTMLElement;
+  const navList = document.querySelector(".nav__list") as HTMLElement;
 
-  hamburger.addEventListener('click', () => {
-    navList.classList.toggle('active')
-    hamburger.classList.toggle('active')
-  })
+  hamburger.addEventListener("click", () => {
+    navList.classList.toggle("active");
+    hamburger.classList.toggle("active");
+  });
 
-  document.addEventListener('click', (e: MouseEvent) => {
-    const target = e.target as HTMLElement | null
-    if (target && !target.closest('.nav')) {
-      navList.classList.remove('active')
-      hamburger.classList.remove('active')
+  document.addEventListener("click", (e: MouseEvent) => {
+    const target = e.target as HTMLElement | null;
+    if (target && !target.closest(".nav")) {
+      navList.classList.remove("active");
+      hamburger.classList.remove("active");
     }
-  })
+  });
 
   const themeSwitcherHTML = `
       <button class="theme-switcher" aria-label="Переключить тему">
@@ -37,7 +37,7 @@ export function initializeThemeAndMenu(): void {
               />
           </svg>
       </button>
-  `
+  `;
 
   const themeSwitcherStyles = `
       .theme-switcher {
@@ -101,75 +101,85 @@ export function initializeThemeAndMenu(): void {
           transform: translateX(2px);
           opacity: 0;
       }
-  `
+  `;
 
   function addStyles(styles: string): void {
-    const styleSheet = document.createElement('style')
-    styleSheet.textContent = styles
-    document.head.appendChild(styleSheet)
+    const styleSheet = document.createElement("style");
+    styleSheet.textContent = styles;
+    document.head.appendChild(styleSheet);
   }
 
   function addThemeSwitcher(): void {
-    document.body.insertAdjacentHTML('beforeend', themeSwitcherHTML)
+    document.body.insertAdjacentHTML("beforeend", themeSwitcherHTML);
   }
 
   function updateImages(theme: string): void {
-    const images = document.querySelectorAll('.lodge-info__logo') as NodeListOf<HTMLImageElement>
+    const images = document.querySelectorAll(
+      ".lodge-info__logo",
+    ) as NodeListOf<HTMLImageElement>;
     images.forEach((img) => {
-      const currentSrc = img.src
-      if (theme === 'dark') {
-        img.src = currentSrc.replace(/(\d+)\.png$/, 'dark_$1.png')
+      const currentSrc = img.src;
+      if (theme === "dark") {
+        img.src = currentSrc.replace(/(\d+)\.png$/, "dark_$1.png");
       } else {
-        img.src = currentSrc.replace(/dark_(\d+)\.png$/, '$1.png')
+        img.src = currentSrc.replace(/dark_(\d+)\.png$/, "$1.png");
       }
-    })
+    });
   }
 
   function initializeTheme(): void {
-    addStyles(themeSwitcherStyles)
-    addThemeSwitcher()
+    addStyles(themeSwitcherStyles);
+    addThemeSwitcher();
 
-    const savedTheme = localStorage.getItem('theme')
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-    const defaultTheme = savedTheme || (prefersDark ? 'dark' : 'light')
+    const savedTheme = localStorage.getItem("theme");
+    const prefersDark = window.matchMedia(
+      "(prefers-color-scheme: dark)",
+    ).matches;
+    const defaultTheme = savedTheme || (prefersDark ? "dark" : "light");
 
-    document.documentElement.setAttribute('data-theme', defaultTheme)
-    updateImages(defaultTheme)
+    document.documentElement.setAttribute("data-theme", defaultTheme);
+    updateImages(defaultTheme);
 
-    const themeSwitcher = document.querySelector('.theme-switcher') as HTMLElement
-    themeSwitcher.addEventListener('click', () => {
-      const currentTheme = document.documentElement.getAttribute('data-theme') as string
-      const newTheme = currentTheme === 'dark' ? 'light' : 'dark'
+    const themeSwitcher = document.querySelector(
+      ".theme-switcher",
+    ) as HTMLElement;
+    themeSwitcher.addEventListener("click", () => {
+      const currentTheme = document.documentElement.getAttribute(
+        "data-theme",
+      ) as string;
+      const newTheme = currentTheme === "dark" ? "light" : "dark";
 
-      document.documentElement.setAttribute('data-theme', newTheme)
-      localStorage.setItem('theme', newTheme)
-      updateImages(newTheme)
-    })
+      document.documentElement.setAttribute("data-theme", newTheme);
+      localStorage.setItem("theme", newTheme);
+      updateImages(newTheme);
+    });
 
-    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
-      if (!localStorage.getItem('theme')) {
-        const newTheme = e.matches ? 'dark' : 'light'
-        document.documentElement.setAttribute('data-theme', newTheme)
-        updateImages(newTheme)
-      }
-    })
+    window
+      .matchMedia("(prefers-color-scheme: dark)")
+      .addEventListener("change", (e) => {
+        if (!localStorage.getItem("theme")) {
+          const newTheme = e.matches ? "dark" : "light";
+          document.documentElement.setAttribute("data-theme", newTheme);
+          updateImages(newTheme);
+        }
+      });
   }
 
-  document.addEventListener('DOMContentLoaded', initializeTheme)
+  document.addEventListener("DOMContentLoaded", initializeTheme);
 
-  const scrollTop = document.querySelector('.scroll-top') as HTMLElement
+  const scrollTop = document.querySelector(".scroll-top") as HTMLElement;
 
   if (scrollTop) {
-    window.addEventListener('scroll', () => {
+    window.addEventListener("scroll", () => {
       if (window.pageYOffset > 200) {
-        scrollTop.classList.add('visible')
+        scrollTop.classList.add("visible");
       } else {
-        scrollTop.classList.remove('visible')
+        scrollTop.classList.remove("visible");
       }
-    })
+    });
 
-    scrollTop.addEventListener('click', () => {
-      window.scrollTo({ top: 0, behavior: 'smooth' })
-    })
+    scrollTop.addEventListener("click", () => {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
   }
 }

@@ -1,4 +1,4 @@
-import CryptoJS from 'crypto-js';
+import CryptoJS from "crypto-js";
 
 export const decryptTranscriptData = (encryptedData: string, key: string) => {
   const bytes = CryptoJS.enc.Base64.parse(encryptedData);
@@ -9,12 +9,12 @@ export const decryptTranscriptData = (encryptedData: string, key: string) => {
 
   const decryptedBytes = CryptoJS.AES.decrypt(
     { ciphertext: CryptoJS.lib.CipherParams.create({ ciphertext }) },
-    CryptoJS.enc.Utf8.parse(key), { iv: CryptoJS.enc.Base64.parse(iv) }
+    CryptoJS.enc.Utf8.parse(key),
+    { iv: CryptoJS.enc.Base64.parse(iv) },
   );
 
   return decryptedBytes.toString(CryptoJS.enc.Utf8);
 };
-
 
 export const getAccessToken = () => {
   return document.cookie.match(/access_token=([^;]+)/)?.[1] || null;

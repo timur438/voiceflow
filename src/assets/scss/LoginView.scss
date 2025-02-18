@@ -1,4 +1,4 @@
-@import './variables';
+@import "./variables";
 
 .login-container {
   display: flex;
@@ -12,7 +12,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  background-color: #F9F9F9;
+  background-color: #f9f9f9;
   padding: 30px;
   border: transparent;
   border-radius: 10px;
@@ -34,7 +34,7 @@
 }
 
 .already-have-account {
-  font-size: $font-size-small; 
+  font-size: $font-size-small;
   text-align: center;
   margin-top: 10px;
 }
