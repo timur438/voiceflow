@@ -23,11 +23,11 @@
       <div class="meeting-list">
         <button
           v-for="meeting in meetings"
-          :key="meeting.id"
+          :key="meeting.local_id"
           class="meeting-item"
-          @click="goToMeeting(meeting.id)"
+          @click="goToMeeting(meeting.local_id)"
         >
-          <span>{{ meeting.id }}</span>
+          <span>{{ meeting.date }}</span>
           <span>{{ meeting.name }}</span>
           <span>
             <div :class="['status', meeting.status === 'new' ? 'new' : 'old']">
@@ -158,7 +158,7 @@ import { getAccessToken, getDecryptedKey } from "@/utils/crypto";
 import axios from "axios";
 
 interface Meeting {
-  id: string; // Изменено на string для локальных id
+  local_id: string; // Изменено на string для локальных id
   date: string;
   name: string;
   status: "new" | "old";
@@ -195,12 +195,12 @@ export default defineComponent({
 
     const meetings = ref<Meeting[]>([]);
 
-    // Генерация локального id
     const generateLocalId = (): string => {
-      return `local-${Date.now()}`; // Используем временную метку для уникальности
+      const id = `local-${Date.now()}`;
+      console.log("Generated ID:", id);
+      return id;
     };
-
-    // Проверка валидности формы
+    
     const isFormValid = computed(() => {
       return (
         selectedFile.value &&
@@ -248,7 +248,7 @@ export default defineComponent({
     const deleteMeeting = () => {
       if (meetingToDelete.value) {
         meetings.value = meetings.value.filter(
-          (meeting) => meeting.id !== meetingToDelete.value!.id,
+          (meeting) => meeting.local_id !== meetingToDelete.value!.local_id,
         );
         localStorage.setItem("transcripts", JSON.stringify(meetings.value)); // Обновляем localStorage
         showPopup.value = false;
@@ -357,7 +357,7 @@ export default defineComponent({
 
         if (response.status === 202) {
           const newMeeting: Meeting = {
-            id: generateLocalId(), // Генерация локального id
+            local_id: generateLocalId(), // Генерация локального id
             date: new Date().toLocaleDateString(),
             name: meetingName.value,
             status: "new",
@@ -453,7 +453,7 @@ export default defineComponent({
                 const decryptedText = new TextDecoder().decode(decrypted);
 
                 return {
-                  id: generateLocalId(), // Генерация локального id
+                  local_id: generateLocalId(), // Генерация локального id
                   date: new Date(transcript.created_at).toLocaleDateString(),
                   name: transcript.meeting_name,
                   status: "new",
