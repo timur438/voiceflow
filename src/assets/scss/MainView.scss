@@ -330,12 +330,13 @@
     background-color: rgba(53, 170, 255, 0.1);
   }
 }
-.meeting-name {
-  margin-bottom: 20px;
+.meeting-name,
+.speaker-count {
   text-align: left;
 }
 
-.meeting-name label {
+.meeting-name label,
+.speaker-count label {
   display: block;
   margin-bottom: 5px;
   color: $text-color;
@@ -344,6 +345,13 @@
 
 .meeting-name input {
   width: 95%;
+  padding: 10px;
+  border: 1px solid $border-color;
+  border-radius: 6px;
+}
+
+.speaker-count input {
+  width: 10%;
   padding: 10px;
   border: 1px solid $border-color;
   border-radius: 6px;
@@ -403,18 +411,18 @@
 
 .meeting-details {
   display: flex;
-  gap: 20px;
-  margin-top: 20px;
+  flex-direction: column;
+  gap: 10px; // Расстояние между полями
+}
 
-  .meeting-name,
-  .speaker-count {
-    flex: 1;
+.meeting-name,
+.speaker-count {
+  display: flex;
+  flex-direction: column;
+}
 
-    input {
-      width: 100%;
-      margin-top: 8px;
-    }
-  }
+.speaker-count {
+  margin-top: 10px; // Дополнительный отступ для разделения
 }
 
 .upload-button:disabled {
