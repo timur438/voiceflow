@@ -27,7 +27,7 @@
           class="meeting-item"
           @click="goToMeeting(meeting.id)"
         >
-          <span>{{ meeting.date }}</span>
+          <span>{{ meeting.id }}</span>
           <span>{{ meeting.name }}</span>
           <span>
             <div :class="['status', meeting.status === 'new' ? 'new' : 'old']">
