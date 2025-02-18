@@ -1,69 +1,3 @@
-<script lang="ts">
-import { defineComponent, ref, onMounted } from "vue";
-import { useRouter, useRoute } from "vue-router";
-import { useI18n } from "vue-i18n";
-import MainSidebar from "@/components/MainSidebar.vue";
-
-interface Participant {
-  name: string;
-  color: string;
-}
-
-interface Meeting {
-  id: string;
-  date: string;
-  name: string;
-  status: "new" | "old";
-  length: string;
-  keywords: string[];
-  participants: Participant[];
-  transcript?: string;
-  summary?: string;
-}
-
-export default defineComponent({
-  name: "MeetingView",
-  components: {
-    MainSidebar,
-  },
-  setup() {
-    const { t } = useI18n();
-    const router = useRouter();
-    const route = useRoute();
-    const meeting = ref<Meeting | null>(null);
-    const activeTab = ref("transcript");
-
-    const goToHome = () => {
-      router.push({ name: "MainView" });
-    };
-
-    const goToSettings = (event: Event) => {
-      event.stopPropagation();
-      router.push({ name: "SettingsView" });
-    };
-
-    const loadMeeting = () => {
-      const savedTranscripts = localStorage.getItem("transcripts");
-      if (savedTranscripts) {
-        const meetings: Meeting[] = JSON.parse(savedTranscripts);
-        const foundMeeting = meetings.find((m) => m.id === route.params.id);
-        if (foundMeeting) {
-          meeting.value = foundMeeting;
-        } else {
-          router.push({ name: "MainView" });
-        }
-      } else {
-        router.push({ name: "MainView" });
-      }
-    };
-
-    onMounted(loadMeeting);
-
-    return { t, goToHome, goToSettings, meeting, activeTab };
-  },
-});
-</script>
-
 <template>
   <div class="main-container">
     <MainSidebar @navigateToMain="goToHome" />
@@ -163,5 +97,73 @@ export default defineComponent({
     </div>
   </div>
 </template>
+
+<script lang="ts">
+import { defineComponent, ref, onMounted } from "vue";
+import { useRouter, useRoute } from "vue-router";
+import { useI18n } from "vue-i18n";
+import MainSidebar from "@/components/MainSidebar.vue";
+
+interface Participant {
+  name: string;
+  color: string;
+}
+
+interface Meeting {
+  id: string;
+  date: string;
+  name: string;
+  status: "new" | "old";
+  length: string;
+  keywords: string[];
+  participants: Participant[];
+  transcript?: string;
+  summary?: string;
+}
+
+export default defineComponent({
+  name: "MeetingView",
+  components: {
+    MainSidebar,
+  },
+  setup() {
+    const { t } = useI18n();
+    const router = useRouter();
+    const route = useRoute();
+    const meeting = ref<Meeting | null>(null);
+    const activeTab = ref("transcript");
+
+    const goToHome = () => {
+      router.push({ name: "MainView" });
+    };
+
+    const goToSettings = (event: Event) => {
+      event.stopPropagation();
+      router.push({ name: "SettingsView" });
+    };
+
+    const loadMeeting = () => {
+      const savedTranscripts = localStorage.getItem("transcripts");
+      if (savedTranscripts) {
+        const meetings: Meeting[] = JSON.parse(savedTranscripts);
+        const foundMeeting = meetings.find((m) => m.id === route.params.id);
+        if (foundMeeting) {
+          meeting.value = foundMeeting;
+        } else {
+          router.push({ name: "MainView" });
+        }
+      } else {
+        router.push({ name: "MainView" });
+      }
+    };
+
+    onMounted(loadMeeting);
+
+    return { t, goToHome, goToSettings, meeting, activeTab };
+  },
+});
+</script>
+
+
 
 <style scoped src="@/assets/scss/MeetingView.scss"></style>
