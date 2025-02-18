@@ -11,7 +11,7 @@ from datetime import datetime, timedelta
 
 from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi import FastAPI, HTTPException, BackgroundTasks, UploadFile, File, Depends, Body, status
+from fastapi import FastAPI, HTTPException, BackgroundTasks, UploadFile, File, Depends, Body, status, Form
 from fastapi.security import OAuth2PasswordBearer
 
 from jose import JWTError, jwt
@@ -250,9 +250,9 @@ async def transcribe(
     file: UploadFile = File(...),
     background_tasks: BackgroundTasks = BackgroundTasks(),
     token: str = Depends(get_current_user),
-    decrypted_key: str = Body(...),
-    meetingName: str = Body(...),
-    speaker_count: int = Body(...),
+    decrypted_key: str = Form(...),
+    meeting_name: str = Form(...),
+    speaker_count: int = Form(...),
     db: Session = Depends(get_db)
 ):
     try:
@@ -274,7 +274,7 @@ async def transcribe(
         response = JSONResponse(status_code=202, content={"message": "File accepted for processing"})
 
         background_tasks.add_task(
-            process_transcription, bytes(file_content), decrypted_key, email, meetingName, speaker_count
+            process_transcription, bytes(file_content), decrypted_key, email, meeting_name, speaker_count
         )
 
         return response
