@@ -1,19 +1,24 @@
 import CryptoJS from "crypto-js";
 
 export const decryptTranscriptData = (encryptedData: string, key: string) => {
-  const bytes = CryptoJS.enc.Base64.parse(encryptedData);
-
-  const iv = CryptoJS.enc.Base64.stringify(bytes.clone().words.slice(0, 4));
-
-  const ciphertext = bytes.clone().words.slice(4);
-
-  const decryptedBytes = CryptoJS.AES.decrypt(
-    { ciphertext: CryptoJS.lib.CipherParams.create({ ciphertext }) },
-    CryptoJS.enc.Utf8.parse(key),
-    { iv: CryptoJS.enc.Base64.parse(iv) },
-  );
-
-  return decryptedBytes.toString(CryptoJS.enc.Utf8);
+  try {
+    const parsedData = CryptoJS.enc.Base64.parse(encryptedData);
+    
+    const iv = CryptoJS.lib.WordArray.create(parsedData.words.slice(0, 4));
+    
+    const ciphertext = CryptoJS.lib.WordArray.create(parsedData.words.slice(4));
+    
+    const decrypted = CryptoJS.AES.decrypt(
+      { ciphertext: ciphertext } as CryptoJS.lib.CipherParams,
+      CryptoJS.enc.Utf8.parse(key),
+      { iv: iv }
+    );
+    
+    return decrypted.toString(CryptoJS.enc.Utf8);
+  } catch (error) {
+    console.error("Decryption error:", error);
+    return null;
+  }
 };
 
 export const getAccessToken = () => {
