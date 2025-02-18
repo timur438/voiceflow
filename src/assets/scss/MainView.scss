@@ -401,6 +401,25 @@
   }
 }
 
+.meeting-details {
+  display: flex;
+  gap: 20px;
+  margin-top: 20px;
+
+  .meeting-name, .speaker-count {
+    flex: 1;
+    
+    input {
+      width: 100%;
+      margin-top: 8px;
+    }
+  }
+}
+
+.upload-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
 
 * {
   font-family: $font-family;

@@ -40,6 +40,8 @@ const messages = {
     uploadError: 'Upload error: {error}',
     serverError: 'Server error: {status} {statusText}',
     unknownError: 'Unknown error',
+    speakerCount: "Speaker count",
+    speakerCountPlaceholder: "Enter a number",
 
     // Auto-recording
     autoRecord: 'Auto-record meetings in calendar',
@@ -116,6 +118,8 @@ const messages = {
     uploadError: 'Ошибка при загрузке файла: {error}',
     serverError: 'Ошибка сервера: {status} {statusText}',
     unknownError: 'Неизвестная ошибка',
+    speakerCount: "Количество спикеров",
+    speakerCountPlaceholder: "Введите число",
 
     // Автоматическая запись
     autoRecord: 'Авто-запись встреч в календаре',
