@@ -477,15 +477,7 @@ export default defineComponent({
       }
     };
 
-    // Загрузка данных при монтировании компонента
-    onMounted(() => {
-      const savedTranscripts = localStorage.getItem("transcripts");
-      if (savedTranscripts) {
-        meetings.value = JSON.parse(savedTranscripts) as Meeting[];
-      } else {
-        loadTranscripts();
-      }
-    });
+    onMounted(loadTranscripts);
 
     return {
       goToHome,
