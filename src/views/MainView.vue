@@ -375,3 +375,5 @@ export default defineComponent({
   }
 });
 </script>
+
+<style scoped src="@/assets/scss/MainView.scss"></style>
