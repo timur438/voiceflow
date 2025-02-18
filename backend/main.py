@@ -293,9 +293,6 @@ async def get_transcripts(current_user: str = Depends(get_current_user), db: Ses
         raise HTTPException(status_code=404, detail="Account not found")
 
     transcripts = db.query(Transcript).filter(Transcript.account_id == account.id).all()
-    
-    if not transcripts:
-        raise HTTPException(status_code=404, detail="No transcripts found")
 
     return {"transcripts": [transcript.encrypted_data for transcript in transcripts]}
 
