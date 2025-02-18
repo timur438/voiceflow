@@ -129,20 +129,21 @@ def send_email(to_email: str, link: str):
     except subprocess.CalledProcessError as e:
         print(f"Error sending email: {e}")
 
-async def process_transcription(file_content: bytes, decrypted_key: bytes, email: str):
+async def process_transcription(file_content: bytes, decrypted_key: bytes, email: str, meetingName: str, speaker_count: int):
     try:
         file_string = base64.b64encode(file_content).decode("utf-8")
 
         result: TranscriptionResult = await predictor.predict(
             file_string=file_string,
-            num_speakers=None,
+            num_speakers=speaker_count,
             translate=False,
             language='ru',
             email=email,
-            decrypted_key=decrypted_key
+            decrypted_key=decrypted_key,
+            meeting_name=meetingName
         )
 
-        logger.info(f"Transcription completed for {email} using key {decrypted_key[:6]}***")
+        logger.info(f"Transcription completed for {email} in {meetingName} with {speaker_count} speakers")
 
     except Exception as e:
         logger.error(f"Ошибка обработки транскрипции для {email}: {str(e)}")
@@ -250,6 +251,8 @@ async def transcribe(
     background_tasks: BackgroundTasks = BackgroundTasks(),
     token: str = Depends(get_current_user),
     decrypted_key: str = Body(...),
+    meetingName: str = Body(...),
+    speaker_count: int = Body(...),
     db: Session = Depends(get_db)
 ):
     try:
@@ -270,7 +273,9 @@ async def transcribe(
 
         response = JSONResponse(status_code=202, content={"message": "File accepted for processing"})
 
-        background_tasks.add_task(process_transcription, bytes(file_content), decrypted_key, email)
+        background_tasks.add_task(
+            process_transcription, bytes(file_content), decrypted_key, email, meetingName, speaker_count
+        )
 
         return response
 

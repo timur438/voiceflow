@@ -1,8 +1,9 @@
-from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, LargeBinary, Text, Boolean
+from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, LargeBinary, Text, Boolean, Float, DateTime
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from dotenv import load_dotenv
+from datetime import datetime
 import os
 
 load_dotenv()
@@ -48,5 +49,8 @@ class Transcript(Base):
     encrypted_data = Column(Text)
     account_id = Column(Integer, ForeignKey('accounts.id'))
     account = relationship("Account", back_populates="transcripts")
+    meeting_name = Column(String(255))
+    created_at = Column(DateTime, default=datetime.utcnow)
+    audio_duration = Column(Float)
 
 Base.metadata.create_all(bind=engine)

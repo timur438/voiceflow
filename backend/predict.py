@@ -142,7 +142,7 @@ class Predictor:
                 logging.info(f"Removed input file: {input_file}")
 
 
-    def _get_speaker_segments(self, audio_path, num_speakers=None):
+    def _get_speaker_segments(self, audio_path, num_speakers):
         logging.info(f"Running speaker diarization on {audio_path}")
         try:
             waveform, sample_rate = torchaudio.load(audio_path)
@@ -324,7 +324,7 @@ class Predictor:
 
     async def predict(self, file_string: str, num_speakers: int = None, translate: bool = False, 
                     language: str = "ru", group_segments: bool = False, 
-                    prompt_type: str = "summary", email: str = None, decrypted_key: str = None) -> TranscriptionResult:
+                    prompt_type: str = "summary", email: str = None, decrypted_key: str = None, meeting_name: str = None) -> TranscriptionResult:
         
         db: Session = SessionLocal()
 
@@ -345,7 +345,17 @@ class Predictor:
                     if not account:
                         raise ValueError("Аккаунт с таким email не найден")
                     
-                    transcript = Transcript(encrypted_data='', account=account)
+                    audio_info = torchaudio.info(wav_file)
+                    audio_length = audio_info.num_frames / audio_info.sample_rate
+                    creation_time = datetime.datetime.utcnow().replace(second=0, microsecond=0)
+                    
+                    transcript = Transcript(
+                        encrypted_data='',
+                        account=account,
+                        meeting_name=meeting_name,
+                        created_at=creation_time,
+                        audio_length=audio_length
+                    )
                     db.add(transcript)
                     db.commit()
                     db.refresh(transcript)
@@ -355,7 +365,7 @@ class Predictor:
                     
                     raw_segments = [
                         {
-                            "text": seg["text"].strip(),
+                            "text": (seg["text"].strip() + " "),
                             "start": seg["start"],
                             "end": seg["end"],
                             "speaker": next((s["speaker"] for s in speaker_segments if s["start"] <= (seg["start"] + seg["end"]) / 2 <= s["end"]), "UNKNOWN"),

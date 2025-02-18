@@ -258,6 +258,7 @@ export default defineComponent({
       const formData = new FormData();
       formData.append('file', selectedFile.value);
       formData.append('speaker_count', speakerCount.value.toString());
+      formData.append('meeting_name', meetingName.value.toString());
       
       const decryptedKey = getDecryptedKey();
       if (decryptedKey) {
