@@ -167,6 +167,8 @@ interface Meeting {
   name: string;
   status: "new" | "old";
   length: string;
+  transcript?: string;
+  speakers?: string[];
 }
 
 export default defineComponent({
@@ -376,37 +378,32 @@ export default defineComponent({
       }
 
       try {
-        const response = await axios.get(
-          "https://voiceflow.ru/api/transcripts",
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          },
-        );
+        const response = await axios.get("https://voiceflow.ru/api/transcripts", {
+          headers: { Authorization: `Bearer ${token}` }
+        });
 
         if (response.status === 200) {
           const { transcripts } = response.data;
-          console.log("Received Transcripts:", transcripts);
-
-          const decryptedTranscripts = transcripts.map(
-            (encryptedData: string) => {
-              const decrypted = decryptTranscriptData(encryptedData, key);
-              console.log("Decrypted Transcript:", decrypted);
+          
+          // Добавляем фильтрацию null-значений
+          const validTranscripts = transcripts
+            .map((encrypted: string) => {
+              const decrypted = decryptTranscriptData(encrypted, key);
+              if (!decrypted) {
+                console.warn("Skipping invalid transcript entry");
+              }
               return decrypted;
-            },
-          );
+            })
+            .filter((t: Meeting | null): t is Meeting => t !== null);
 
-          localStorage.setItem(
-            "transcripts",
-            JSON.stringify(decryptedTranscripts),
-          );
-          meetings.value = decryptedTranscripts;
-        } else {
-          console.error("Failed to fetch transcripts:", response.statusText);
+          meetings.value = validTranscripts;
+          
+          // Сохраняем только валидные данные
+          localStorage.setItem("transcripts", JSON.stringify(validTranscripts));
         }
       } catch (error) {
         console.error("Error fetching transcripts:", error);
+        meetings.value = []; // Сбрасываем список при ошибке
       }
     };
 
