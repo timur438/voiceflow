@@ -83,21 +83,34 @@
               accept="audio/*,video/*" 
             />
           </div>
-          <div class="meeting-name">
-            <label for="meeting-name">{{ $t('meetingName') }}</label>
-            <input 
-              type="text" 
-              id="meeting-name" 
-              v-model="meetingName" 
-              :placeholder="$t('meetingNamePlaceholder')" 
-            />
+          <div class="meeting-details">
+            <div class="meeting-name">
+              <label for="meeting-name">{{ $t('meetingName') }}</label>
+              <input 
+                type="text" 
+                id="meeting-name" 
+                v-model="meetingName" 
+                :placeholder="$t('meetingNamePlaceholder')" 
+              />
+            </div>
+            <div class="speaker-count">
+              <label for="speaker-count">{{ $t('speakerCount') }}</label>
+              <input 
+                type="number" 
+                id="speaker-count" 
+                v-model.number="speakerCount" 
+                min="1"
+                required
+                :placeholder="$t('speakerCountPlaceholder')"
+              />
+            </div>
           </div>
         </div>
         <div class="popup-footer">
           <button 
             class="upload-button" 
             @click="uploadFile" 
-            :disabled="!selectedFile || !meetingName || isUploading"
+            :disabled="!isFormValid || isUploading"
           >
             {{ isUploading ? $t('uploading') : $t('uploadMeeting') }}
           </button>
@@ -108,7 +121,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, onMounted } from 'vue';
+import { defineComponent, ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import MainSidebar from '@/components/MainSidebar.vue';
@@ -135,12 +148,17 @@ export default defineComponent({
     const showUploadPopup = ref(false);
     const meetingToDelete = ref<Meeting | null>(null);
     const meetingName = ref('');
+    const speakerCount = ref<number | null>(null);
     const fileInput = ref<HTMLInputElement | null>(null);
     const selectedFile = ref<File | null>(null);
     const isFileSelected = ref(false);
     const isUploading = ref(false);
 
-    const meetings = ref<Meeting[]>([]);  // Данные встреч
+    const meetings = ref<Meeting[]>([]);
+
+    const isFormValid = computed(() => {
+      return selectedFile.value && meetingName.value && speakerCount.value && speakerCount.value > 0;
+    });
 
     const getItemFromLocalStorage = (name: string) => {
       const item = localStorage.getItem(name);
@@ -188,6 +206,7 @@ export default defineComponent({
       selectedFile.value = null;
       isFileSelected.value = false;
       meetingName.value = '';
+      speakerCount.value = null;
       isUploading.value = false;
     };
 
@@ -205,6 +224,8 @@ export default defineComponent({
         }
         selectedFile.value = file;
         isFileSelected.value = true;
+        const fileName = file.name.replace(/\.[^/.]+$/, "");
+        meetingName.value = fileName;
       }
     };
 
@@ -218,6 +239,8 @@ export default defineComponent({
         }
         selectedFile.value = file;
         isFileSelected.value = true;
+        const fileName = file.name.replace(/\.[^/.]+$/, "");
+        meetingName.value = fileName;
       }
     };
 
@@ -226,7 +249,7 @@ export default defineComponent({
     };
 
     const uploadFile = async () => {
-      if (!selectedFile.value || !meetingName.value) {
+      if (!selectedFile.value || !meetingName.value || !speakerCount.value) {
         alert(t('selectFileAndName'));
         return;
       }
@@ -234,6 +257,7 @@ export default defineComponent({
       isUploading.value = true;
       const formData = new FormData();
       formData.append('file', selectedFile.value);
+      formData.append('speaker_count', speakerCount.value.toString());
       
       const decryptedKey = getDecryptedKey();
       if (decryptedKey) {
@@ -258,7 +282,6 @@ export default defineComponent({
           }
         });
 
-        // Проверка статуса ответа
         if (response.status === 202) {
           meetings.value.unshift({
             id: meetings.value.length + 1,
@@ -331,10 +354,12 @@ export default defineComponent({
       showUploadPopup,
       meetingToDelete,
       meetingName,
+      speakerCount,
       fileInput,
       selectedFile,
       isFileSelected,
       isUploading,
+      isFormValid,
       confirmDelete,
       deleteMeeting,
       cancelDelete,
@@ -349,5 +374,3 @@ export default defineComponent({
   }
 });
 </script>
-
-<style scoped src="@/assets/scss/MainView.scss"></style>
