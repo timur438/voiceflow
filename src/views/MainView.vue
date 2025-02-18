@@ -27,7 +27,7 @@
           class="meeting-item"
           @click="goToMeeting(meeting.id)"
         >
-          <span>{{ meeting.id }}</span>
+          <span>{{ meeting.date }}</span>
           <span>{{ meeting.name }}</span>
           <span>
             <div :class="['status', meeting.status === 'new' ? 'new' : 'old']">
@@ -154,14 +154,11 @@ import { defineComponent, ref, onMounted, computed } from "vue";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import MainSidebar from "@/components/MainSidebar.vue";
-import {
-  getAccessToken,
-  getDecryptedKey,
-} from "@/utils/crypto";
+import { getAccessToken, getDecryptedKey } from "@/utils/crypto";
 import axios from "axios";
 
 interface Meeting {
-  id: number;
+  id: string; // Изменено на string для локальных id
   date: string;
   name: string;
   status: "new" | "old";
@@ -171,7 +168,7 @@ interface Meeting {
 }
 
 interface TranscriptResponse {
-  id: number;
+  id: number; // Серверный id (не используется на фронтенде)
   encrypted_data: string;
   created_at: string;
   meeting_name: string;
@@ -198,6 +195,12 @@ export default defineComponent({
 
     const meetings = ref<Meeting[]>([]);
 
+    // Генерация локального id
+    const generateLocalId = (): string => {
+      return `local-${Date.now()}`; // Используем временную метку для уникальности
+    };
+
+    // Проверка валидности формы
     const isFormValid = computed(() => {
       return (
         selectedFile.value &&
@@ -207,15 +210,13 @@ export default defineComponent({
       );
     });
 
+    // Получение email из localStorage
     const getItemFromLocalStorage = (name: string) => {
       const item = localStorage.getItem(name);
       try {
         return item;
       } catch (e) {
-        console.error(
-          `Ошибка при парсинге локального хранилища для '${name}':`,
-          e,
-        );
+        console.error(`Ошибка при парсинге локального хранилища для '${name}':`, e);
         return item;
       }
     };
@@ -224,6 +225,7 @@ export default defineComponent({
       getItemFromLocalStorage("email") || "unknown@example.com",
     );
 
+    // Навигация
     const goToHome = () => {
       router.push({ name: "MainView" });
     };
@@ -233,10 +235,11 @@ export default defineComponent({
       router.push({ name: "SettingsView" });
     };
 
-    const goToMeeting = (id: number) => {
+    const goToMeeting = (id: string) => {
       router.push({ name: "MeetingView", params: { id } });
     };
 
+    // Удаление встречи
     const confirmDelete = (meeting: Meeting) => {
       meetingToDelete.value = meeting;
       showPopup.value = true;
@@ -247,6 +250,7 @@ export default defineComponent({
         meetings.value = meetings.value.filter(
           (meeting) => meeting.id !== meetingToDelete.value!.id,
         );
+        localStorage.setItem("transcripts", JSON.stringify(meetings.value)); // Обновляем localStorage
         showPopup.value = false;
       }
     };
@@ -255,6 +259,7 @@ export default defineComponent({
       showPopup.value = false;
     };
 
+    // Закрытие попапа загрузки
     const closeUploadPopup = () => {
       showUploadPopup.value = false;
       selectedFile.value = null;
@@ -264,10 +269,12 @@ export default defineComponent({
       isUploading.value = false;
     };
 
+    // Открытие диалога выбора файла
     const openFileDialog = () => {
       fileInput.value?.click();
     };
 
+    // Обработка выбора файла
     const handleFileChange = (event: Event) => {
       const input = event.target as HTMLInputElement;
       if (input.files && input.files[0]) {
@@ -283,6 +290,7 @@ export default defineComponent({
       }
     };
 
+    // Обработка перетаскивания файла
     const handleDrop = (event: DragEvent) => {
       event.preventDefault();
       if (event.dataTransfer?.files.length) {
@@ -302,6 +310,7 @@ export default defineComponent({
       event.preventDefault();
     };
 
+    // Загрузка файла на сервер
     const uploadFile = async () => {
       if (!selectedFile.value || !meetingName.value || !speakerCount.value) {
         alert(t("selectFileAndName"));
@@ -347,13 +356,15 @@ export default defineComponent({
         );
 
         if (response.status === 202) {
-          meetings.value.unshift({
-            id: meetings.value.length + 1,
+          const newMeeting: Meeting = {
+            id: generateLocalId(), // Генерация локального id
             date: new Date().toLocaleDateString(),
             name: meetingName.value,
             status: "new",
             length: t("processing"),
-          });
+          };
+          meetings.value.unshift(newMeeting);
+          localStorage.setItem("transcripts", JSON.stringify(meetings.value)); // Сохраняем в localStorage
           closeUploadPopup();
           return;
         }
@@ -375,17 +386,19 @@ export default defineComponent({
       }
     };
 
+    // Форматирование длительности
     const formatDuration = (seconds: number): string => {
-      const hours = Math.floor(seconds / 3600); // Получаем часы
-      const minutes = Math.floor((seconds % 3600) / 60); // Получаем минуты
+      const hours = Math.floor(seconds / 3600);
+      const minutes = Math.floor((seconds % 3600) / 60);
 
       if (hours > 0) {
-        return `${hours} час ${minutes} мин`; // Формат с часами
+        return `${hours} час ${minutes} мин`;
       } else {
-        return `${minutes} мин`; // Формат только с минутами
+        return `${minutes} мин`;
       }
     };
 
+    // Загрузка расшифровок
     const loadTranscripts = async () => {
       const token = getAccessToken();
       const key = getDecryptedKey();
@@ -440,11 +453,11 @@ export default defineComponent({
                 const decryptedText = new TextDecoder().decode(decrypted);
 
                 return {
-                  id: transcript.id,
-                  date: new Date(transcript.created_at).toLocaleDateString(), 
+                  id: generateLocalId(), // Генерация локального id
+                  date: new Date(transcript.created_at).toLocaleDateString(),
                   name: transcript.meeting_name,
                   status: "new",
-                  length: formatDuration(Number(transcript.audio_duration)), 
+                  length: formatDuration(Number(transcript.audio_duration)),
                   transcript: decryptedText,
                 };
               } catch (error) {
@@ -464,7 +477,15 @@ export default defineComponent({
       }
     };
 
-    onMounted(loadTranscripts);
+    // Загрузка данных при монтировании компонента
+    onMounted(() => {
+      const savedTranscripts = localStorage.getItem("transcripts");
+      if (savedTranscripts) {
+        meetings.value = JSON.parse(savedTranscripts) as Meeting[];
+      } else {
+        loadTranscripts();
+      }
+    });
 
     return {
       goToHome,
