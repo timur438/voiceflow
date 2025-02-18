@@ -294,7 +294,17 @@ async def get_transcripts(current_user: str = Depends(get_current_user), db: Ses
 
     transcripts = db.query(Transcript).filter(Transcript.account_id == account.id).all()
 
-    return {"transcripts": [transcript.encrypted_data for transcript in transcripts]}
+    response_data = [
+        {
+            "encrypted_data": transcript.encrypted_data,
+            "created_at": transcript.created_at,
+            "meeting_name": transcript.meeting_name,
+            "audio_duration": transcript.audio_duration 
+        }
+        for transcript in transcripts
+    ]
+
+    return {"transcripts": response_data}
 
 if __name__ == "__main__":
     import uvicorn

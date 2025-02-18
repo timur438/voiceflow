@@ -170,6 +170,14 @@ interface Meeting {
   speakers?: string[];
 }
 
+interface TranscriptResponse {
+  id: number;
+  encrypted_data: string;
+  created_at: string;
+  meeting_name: string;
+  audio_duration: string;
+}
+
 export default defineComponent({
   name: "MainView",
   components: {
@@ -378,12 +386,12 @@ export default defineComponent({
 
       try {
         const response = await axios.get("https://voiceflow.ru/api/transcripts", {
-          headers: { Authorization: `Bearer ${token}` }
+          headers: { Authorization: `Bearer ${token}` },
         });
 
         if (response.status === 200) {
           const { transcripts } = response.data;
-          
+
           const base64ToArrayBuffer = (base64: string) => {
             const binaryString = atob(base64);
             const bytes = new Uint8Array(binaryString.length);
@@ -394,41 +402,49 @@ export default defineComponent({
           };
 
           const decryptedTranscripts = await Promise.all(
-            transcripts.map(async (encrypted: string) => {
+            transcripts.map(async (transcript: TranscriptResponse) => {
               try {
-                const encryptedBuffer = base64ToArrayBuffer(encrypted);
+                const encryptedBuffer = base64ToArrayBuffer(transcript.encrypted_data);
                 const iv = encryptedBuffer.slice(0, 16);
                 const ciphertext = encryptedBuffer.slice(16);
 
                 const encoder = new TextEncoder();
                 const keyData = encoder.encode(key);
-                const keyHash = await crypto.subtle.digest('SHA-256', keyData);
+                const keyHash = await crypto.subtle.digest("SHA-256", keyData);
 
                 const cryptoKey = await crypto.subtle.importKey(
-                  'raw',
+                  "raw",
                   keyHash,
-                  { name: 'AES-CBC' },
+                  { name: "AES-CBC" },
                   false,
-                  ['decrypt']
+                  ["decrypt"]
                 );
 
                 const decrypted = await crypto.subtle.decrypt(
-                  { name: 'AES-CBC', iv },
+                  { name: "AES-CBC", iv },
                   cryptoKey,
                   ciphertext
                 );
 
-                return new TextDecoder().decode(decrypted);
+                const decryptedText = new TextDecoder().decode(decrypted);
+
+                return {
+                  id: transcript.id,
+                  date: new Date(transcript.created_at).toLocaleDateString(), // Форматируем дату
+                  name: transcript.meeting_name,
+                  status: "new", // Можно добавить логику для определения статуса
+                  length: transcript.audio_duration, // Длительность аудио
+                  transcript: decryptedText, // Расшифрованный текст
+                };
               } catch (error) {
-                console.error('Decryption error:', error);
+                console.error("Decryption error:", error);
                 return null;
               }
             })
           );
 
-          const validTranscripts = decryptedTranscripts.filter(t => t !== null);
-          
-          meetings.value = validTranscripts;
+          const validTranscripts = decryptedTranscripts.filter((t) => t !== null);
+          meetings.value = validTranscripts as Meeting[];
           localStorage.setItem("transcripts", JSON.stringify(validTranscripts));
         }
       } catch (error) {
