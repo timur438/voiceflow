@@ -354,7 +354,7 @@ class Predictor:
                         account=account,
                         meeting_name=meeting_name,
                         created_at=creation_time,
-                        audio_length=audio_length
+                        audio_duration=audio_length
                     )
                     db.add(transcript)
                     db.commit()
