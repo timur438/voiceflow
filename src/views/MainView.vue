@@ -375,6 +375,17 @@ export default defineComponent({
       }
     };
 
+    const formatDuration = (seconds: number): string => {
+      const hours = Math.floor(seconds / 3600); // Получаем часы
+      const minutes = Math.floor((seconds % 3600) / 60); // Получаем минуты
+
+      if (hours > 0) {
+        return `${hours} час ${minutes} мин`; // Формат с часами
+      } else {
+        return `${minutes} мин`; // Формат только с минутами
+      }
+    };
+
     const loadTranscripts = async () => {
       const token = getAccessToken();
       const key = getDecryptedKey();
@@ -430,11 +441,11 @@ export default defineComponent({
 
                 return {
                   id: transcript.id,
-                  date: new Date(transcript.created_at).toLocaleDateString(), // Форматируем дату
+                  date: new Date(transcript.created_at).toLocaleDateString(), 
                   name: transcript.meeting_name,
-                  status: "new", // Можно добавить логику для определения статуса
-                  length: transcript.audio_duration, // Длительность аудио
-                  transcript: decryptedText, // Расшифрованный текст
+                  status: "new",
+                  length: formatDuration(Number(transcript.audio_duration)), 
+                  transcript: decryptedText,
                 };
               } catch (error) {
                 console.error("Decryption error:", error);
